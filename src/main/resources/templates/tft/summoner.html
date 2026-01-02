@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="~{layout/layout.html}">
+<head>
+    <meta charset="UTF-8">
+    <title>TFT Matches - Analytics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body style="background-color: #212529; color: #ffffff;">
+	<div class="container mx-auto px-4">
+	<main layout:fragment="content" class="bg-[#0f1215] min-h-screen text-white p-6">
+		<div class="max-w-7xl mx-auto grid grid-cols-12 gap-6">
+			<!-- Summoner Profile -->
+			<aside class="col-span-3 space-y-4 sticky top-24 h-fit">
+				<div class="bg-[#1c2127] rounded-lg p-6 flex flex-col items-center border border-gray-800">
+					<!-- 프로필 -->
+					<div class="relative mb-4">
+						<div class="w-24 h-24 bg-blue-900/20 rounded-full flex items-center justify-center border-2 border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.5)] overflow-hidden">
+							<img th:src="'http://ddragon.leagueoflegends.com/cdn/15.24.1/img/profileicon/' + ${profile.profileIconId} + '.png'" alt="프로필 아이콘" class="w-full h-full object-cover rounded-full">
+						</div>
+					</div>
+					<div class="text-center">
+						<!-- 닉네임 & 태그라인 -->
+						<h2 class="text-xl font-bold ">
+							<span th:text="${profile.summonerName}"></span>
+							<span class="text-gray-500 text-sm font-normal" th:text="'#' + ${profile.tagLine}"></span>
+						</h2>
+						<!-- 티어 및 점수 -->
+						<p class="text-blue-400 font-bold mt-1" th:text="${profile.tier} +' '+ ${profile.rank} +' '+ ${profile.lp} + ' LP'"></p>
+						<!-- To Do -->
+						<p class="text-gray-500 text-xs mt-1">랭크 #4,018 (상위 0.4%)</p>
+					</div>
+					<!-- 통계 -->
+					<div class="w-full mt-8 space-y-3">
+						<div class="flex justify-between items-center bg-[#12161b] p-3 rounded">
+							<span class="text-xs text-gray-400">평균 등수</span>
+							<span class="text-lg font-bold text-yellow-500 tracking-tight" th:text="${#numbers.formatDecimal(profile.avgPlacement, 1, 2)}"></span>
+						</div>
+						<div class="grid grid-cols-2 gap-2">
+							<div class="bg-[#12161b] p-3 rounded text-center">
+								<p class="text-xs text-gray-400 mb-1">순방 확률</p>
+								<p class="text-md font-bold text-green-500" th:text="${#numbers.formatDecimal(profile.top4Rate* 100, 1, 1)} + '%'"></p>
+							</div>
+							<div class="bg-[#12161b] p-3 rounded text-center">
+								<p class="text-xs text-gray-400 mb-1">승률</p>
+								<p class="text-md font-bold text-white" th:text="${#numbers.formatDecimal(profile.winRate, 1, 1)} + '%'"></p>
+							</div>
+						</div>
+					</div>
+					<!-- 업적 -->
+					<div class="w-full mt-6 flex flex-wrap gap-2">
+						<span class="bg-green-900/20 text-green-500 text-[10px] px-2 py-1 rounded border border-green-900/50">#녹서스 애호가</span>
+						<span class="bg-orange-900/30 text-orange-500 text-[10px] px-2 py-1 rounded font-bold">🔥 연승 중</span>
+						<span class="bg-gray-800 text-gray-400 text-[10px] px-2 py-1 rounded">#후반 지향</span>
+					</div>
+				</div>
+			</aside>
+			<main class="col-span-9 space-y-6">
+				<!-- Match Summary -->
+				<section class="bg-[#1c2127] rounded-lg p-6 grid grid-cols-12 gap-8 border border-gray-800">
+					<div class="col-span-5 border-r border-gray-800 pr-4">
+						<div class="flex justify-between items-end mb-4">
+							<h3 class="text-xs text-gray-400 font-bold uppercase tracking-wider">지난 20게임 등수 분포</h3>
+							<!-- 사용자 데이터 가져와서 4.00을 수정해야함 -->
+							<span class="text-xl font-black text-yellow-500">4.00 <small class="text-[10px] text-gray-500 font-normal">평균</small></span>
+						</div>
+						<canvas id="rankChart" height="120"></canvas>
+					</div>
+					<!-- 최근 20개 게임 전적 통계 -->
+					<div class="col-span-3 flex flex-col justify-center items-center">
+						<p class="text-xs text-gray-500 uppercase font-bold">TOP 4 확률</p>
+						<h2 class="text-4xl font-black text-green-500 my-1">60.0%</h2>
+						<div class="mt-4 pt-4 border-t border-gray-800 w-full text-center">
+							<p class="text-[10px] text-gray-500 uppercase">승률 10.0%</p>
+						</div>
+					</div>
+				</section>
+				<!-- 최근 경기 정보 -->
+				<section class="space-y-3">
+					<h3 class="font-bold text-sm text-gray-300">최근 경기 정보</h3>
+					<!-- 전적 정보 컴포넌트 -->
+					<div th:each="match : ${matches}" class="mb-4 rounded-lg border transition-all hover:border-gray-600"
+						th:with="myP=${match.info.participants[0]}" th:classappend="${myP.placement <= 4} ? 'bg-blue-900/10 border-blue-900/30' : 'bg-[#1c2127] border-gray-800'">
+						<div class="flex p-4">
+							<div class="flex flex-col justify-center items-center w-24 border-r border-gray-800/50 pr-4">
+								<!-- 등수 -->
+								<span class="text-3xl font-black italic" th:text="'#' + ${myP.placement}" th:classappend="${myP.placement <= 4} ? 'text-blue-400' : 'text-gray-400'"></span>
+								<span class="text-[10px] font-bold mt-1 uppercase tracking-wider" th:classappend="${myP.placement <= 4} ? 'text-blue-500' : 'text-gray-500'"></span>
+								<!-- 레벨 -->
+								<div class="mt-2 text-[11px] text-gray-500" th:text="'Lv. ' + ${myP.level}"></div>
+							</div>
+							<!-- 전설이 이미지 -->
+							<div class="flex items-center justify-center ml-4 mr-2 p-1">
+								<div class="w-12 h-12 bg-blue-900/10 rounded-full flex items-center justify-center border-2 border-blue-500/50 overflow-hidden">
+									<img th:if="${myP.companion != null and myP.companion.companionImg != null}" th:src="${myP.companion.companionImg}" class="w-full h-full object-cover scale-110" alt="전설이">
+								</div>
+							</div>
+							<!-- 게임 정보 -->
+							<div class="flex-1 px-6">
+								<div class="flex flex-wrap gap-3">
+									<div th:each="unit : ${myP.units}" class="flex flex-col items-center">
+										<div class="relative w-12 h-12 group">
+											<!-- 챔피언 이미지와 테두리 -->
+											<div class="w-full h-full bg-gray-800 rounded border-2 overflow-hidden"
+												th:classappend="${unit.cost >= 6} ? 'border-yellow-500' : 
+																(${unit.cost == 4} ? 'border-purple-500' : 
+																(${unit.cost == 3} ? 'border-[#00b0f0]' : 
+																(${unit.cost == 2} ? 'border-[#11b288]' : 'border-[#808080]')))">
+												
+												<img th:if="${unit.championImg != null}" th:src="${unit.championImg}" class="w-full h-full object-cover object-right" th:alt="${unit.championName}">
+												<div th:unless="${unit.championImg != null}" class="w-full h-full flex items-center justify-center text-[8px] text-gray-400" th:text="${unit.championName}"></div> 
+											</div>
+											<!-- 챔피언 이름 -->
+											<div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:block z-50">
+												<div class="bg-black text-white text-[10px] px-2 py-1 rounded border border-gray-700 whitespace-nowrap shadow-xl">
+													<span th:text="${unit.championName}">챔피언 이름</span>
+												</div>
+											</div>
+											<!-- 챔피언 ★ -->
+											<div class="absolute -top-2 left-0 right-0 flex justify-center text-[10px] text-yellow-400 drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)]" 
+												th:if="${unit.star > 1}"> <span th:each="i : ${#numbers.sequence(1, unit.star)}">★</span>
+											</div>
+										</div>
+										<!-- 아이템 -->
+										<div class="flex gap-0.5 mt-1">
+											<div th:each="itemUrl, iterStat : ${unit.itemImgUrls}" 
+												class="relative group w-3.5 h-3.5 bg-gray-900 rounded-sm border border-gray-700 overflow-visible">
+												<!-- 아이템 이미지 -->
+												<img th:src="${itemUrl}" class="w-full h-full object-cover">
+												<!-- 아이템 이름(툴팁) -->
+												<div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:block z-50">
+													<div class="bg-gray-900 text-white text-[10px] px-2 py-1 rounded border border-gray-700 whitespace-nowrap shadow-xl">
+														<span th:text="${unit.items[iterStat.index]}">아이템 이름</span>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+								<!-- 시너지 -->
+								<div class="mt-4 flex flex-wrap gap-2">
+									<div th:each="trait : ${myP.traits}" class="relative w-8 h-8 group">
+										<!-- 등급 -->
+										<img th:if="${trait.bgUrl != null}" th:src="${trait.bgUrl}" class="absolute inset-0 w-full h-full object-contain" />
+										<!-- 시너지 아이콘 -->
+										<img th:if="${trait.iconUrl != null}" th:src="${trait.iconUrl}" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[18px] h-[18px] invert brightness-200" th:alt="${trait.name}">
+										<!-- 시너지 이름(툴팁) -->
+										<div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:block z-50">
+											<div class="bg-gray-900 text-white text-[10px] px-2 py-1 rounded border border-gray-700 whitespace-nowrap shadow-xl">
+												<span th:text="${trait.name}"></span> 
+												(<span th:text="${trait.num_units}"></span>)
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<!-- 남은 골드와 플레이한 날짜 -->
+							<div class="flex flex-col justify-between items-end min-w-fit pl-4 text-[12px] self-stretch py-1">
+								<div class="text-yellow-500/80 font-mono">
+									<span class="mr-1">💰</span><span th:text="${myP.gold_left}"></span>
+								</div>
+								<div class="text-gray-500 italic">
+									<span th:text="${#dates.format(new java.util.Date(match.info.game_datetime), 'MM-dd')}"></span>
+								</div>
+							</div>
+						</div>
+					</div>
+				</section>
+			</main>
+		</div>
+
+		<script>
+			const date = new Date(1764687600000); // JS는 밀리초 단위 사용
+			console.log(date.toLocaleString());
+		</script>
+		<script>
+			const ctx = document.getElementById('rankChart').getContext('2d');
+			new Chart(ctx, {
+				type: 'bar',
+				data: {
+					labels: ['1', '2', '3', '4', '5', '6', '7', '8'],
+					datasets: [{
+						data: [2, 4, 3, 3, 3, 2, 1, 2],
+						backgroundColor: (c) => c.index < 4 ? '#3b82f6' : '#4b5563',
+						borderRadius: 3,
+						barPercentage: 0.7
+					}]
+				},
+				options: {
+					plugins: { legend: { display: false } },
+					scales: {
+						y: { display: false },
+						x: { 
+							grid: { display: false },
+							ticks: { color: '#6b7280', font: { size: 10 } }
+						}
+					}
+				}
+			});
+		</script>
+	</main>
+</div>
+</body>
+</html>

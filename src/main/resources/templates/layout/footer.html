@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <footer th:fragment="footer" class="mt-auto border-t border-gray-800 bg-[#0f1215] py-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                
+                <div>
+                    <div class="flex items-center gap-2 mb-3">
+                        <img th:src="@{https://cdn.dak.gg/tft/images2/gnb/family/ico-tft.svg}" alt="Logo" class="h-5 opacity-70 grayscale">
+                        <span class="text-sm font-bold text-gray-400 tracking-tight">TFT<span class="text-gray-500">.GG</span></span>
+                    </div>
+                    <p class="text-xs text-gray-500 leading-relaxed">
+                        &copy; 2025 TFT.GG All rights reserved.<br>
+                        TFT.GG isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games.
+                    </p>
+                </div>
+
+                <div class="flex gap-8 text-xs text-gray-500">
+                    <div class="flex flex-col gap-2">
+                        <span class="font-bold text-gray-400 uppercase tracking-wider">Service</span>
+                        <a href="#" class="hover:text-gray-300 transition-colors">이용약관</a>
+                        <a href="#" class="hover:text-gray-300 transition-colors">개인정보처리방침</a>
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <span class="font-bold text-gray-400 uppercase tracking-wider">Contact</span>
+                        <a href="mailto:support@tft.gg" class="hover:text-gray-300 transition-colors">Contact Us</a>
+                        <a href="#" class="hover:text-gray-300 transition-colors">GitHub</a>
+                    </div>
+                </div>
+
+            </div>
+            
+            <div class="mt-8 pt-6 border-t border-gray-900/50">
+                <p class="text-[10px] text-gray-600 text-center">
+                    Data provided by Riot Games. TFT and League of Legends are trademarks or registered trademarks of Riot Games, Inc.
+                </p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

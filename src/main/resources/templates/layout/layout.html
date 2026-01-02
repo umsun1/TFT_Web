@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+    xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title layout:fragment="title">TFT Analytics</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        tftBg: '#0f1215',
+                        tftCard: '#1c2127',
+                        tftGold: '#ca9333',
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <style>
+        /* 기본적인 폰트나 전체 배경색 설정 */
+        body {
+            @apply bg-[#0f1215] text-white;
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <header th:replace="~{layout/header.html :: header}"></header>
+
+    <main layout:fragment="content" class="flex-grow container mx-auto px-4 py-8"></main>
+
+    <footer th:replace="~{layout/footer.html :: footer}"></footer>
+
+</body>
+</html>

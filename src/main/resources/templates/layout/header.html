@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <header th:fragment="header" class="sticky top-0 z-50 w-full bg-[#1c2127]/90 backdrop-blur-md border-b border-gray-800">
+        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                
+                <div class="flex items-center gap-4">
+                    <!-- 로고 -->
+                    <a th:href="@{/}" class="flex items-center transition-transform hover:scale-105 active:scale-95">
+                        <img th:src="@{https://cdn.dak.gg/tft/images2/gnb/family/ico-tft.svg}" 
+                            alt="TFT 홈"
+                            class="h-8 w-auto">
+                        <span class="ml-3 text-lg font-black tracking-tighter italic text-white">
+                            TFT<span class="text-yellow-500">.GG</span>
+                        </span>
+                    </a>
+                    
+                    <div class="hidden md:flex ml-10 items-baseline space-x-4">
+                        <a href="#" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">가이드</a>
+                        <a href="#" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">통계</a>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <button class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-1.5 rounded text-xs font-bold transition-colors">
+                        로그인
+                    </button>
+                </div>
+                
+            </div>
+        </nav>
+    </header>
+</body>
+</html>

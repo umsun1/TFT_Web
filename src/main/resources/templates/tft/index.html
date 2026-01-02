@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html
+xmlns:th="http://www.thymeleaf.org"
+xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+layout:decorate="~{layout/layout.html}">
+<head>
+<meta charset="UTF-8">
+<title>TFT Search Service</title>
+<style>
+
+.app-ad-container {
+    background-image: url('https://cdn.metatft.com/cdn-cgi/image/width=700,format=auto/https://cdn.metatft.com/file/metatft/images/social_thumbnail_metatft2.png');
+    background-size: cover; background-repeat: no-repeat; background-position: center;
+    width: 700px; height: 200px;
+    display: flex; padding-left: 5%;
+
+}
+.text-content {
+    max-width: 50%;
+    color: white;
+}
+
+.heading-text {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.body-text {
+    font-size: 16px;
+    margin-bottom: 20px;
+}
+
+.download-link {
+    color: yellow; /* 다운로드 링크는 강조 */
+    font-weight: bold;
+    text-decoration: none;
+}
+
+
+.form-group label {
+    margin-right: 10px; /* 라벨과 인풋 사이의 간격 조정 */
+    width: 80px; /* 라벨의 고정 너비 설정 */
+}
+
+/* 유닛 컨테이너: flex로 여러줄 가능 */
+.unit-container {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 3px;
+	margin-top: 10px;
+}
+
+/* 유닛 박스 */
+.unit-box {
+	width: 70px;
+	text-align: center;
+	position: relative;
+}
+
+/* 별 등급 */
+.unit-star {
+	position: absolute;
+	top: -20px;
+	left: 0;
+	right: 0;
+	font-size: 14px;
+	font-weight: bold;
+	text-align: center;
+}
+
+/* 유닛 이미지 */
+.unit-image {
+	position: relative; /* 툴팁 위치 기준 */
+	border: 3px solid;
+	border-radius: 8px;
+	overflow: hidden;
+	width: 60px;
+	height: 60px;
+	margin: 0 auto;
+}
+
+/* 유닛 이미지 내부 img */
+.unit-image img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+/* 유닛 아이템 목록 */
+.unit-items {
+	display: flex;
+	justify-content: center;
+	flex-wrap: wrap;
+	gap: 2px;
+	margin-top: 4px;
+}
+
+/* 아이템 이미지 */
+.unit-items img {
+	width: 17px;
+	height: 17px;
+	border-radius: 4px;
+}
+
+/* 챔피언 이미지 */
+.champ-img {
+	width: 60px;
+	height: 60px;
+	object-fit: cover;
+	object-position: 75% top;
+	border-radius: 5px;
+}
+
+/* 정보 박스 */
+.infoBox {
+	min-height: auto;
+	height: auto;
+	background-color: #f8f9fa;
+	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+	border-radius: 12px;
+}
+
+/* 아이템 컨테이너: 한 줄에 배치, 간격 */
+.item-container {
+	display: flex;
+	flex-wrap: nowrap;
+	gap: 6px;
+}
+
+/* 아이템, 유닛, 시너지 모두 position: relative */
+.item-wrapper,
+.unit,
+.synergy {
+	position: relative;
+	display: inline-block;
+}
+
+/* 툴팁 기본 스타일 */
+.tooltip {
+	position: absolute;
+	bottom: 110%; /* 이미지 위로 툴팁을 띄우기 */
+	left: 50%;
+	transform: translateX(-50%);
+	padding: 4px 8px;
+	background: rgba(0, 0, 0, 0.8);
+	color: white;
+	border-radius: 4px;
+	white-space: nowrap;
+	visibility: hidden;
+	opacity: 0;
+	transition: opacity 0.3s ease, transform 0.3s ease;
+	pointer-events: none;
+	z-index: 10; /* 툴팁을 유닛 이미지 위에 표시하기 위해 설정 */
+}
+
+/* 호버 시 툴팁 보이기 */
+.item-wrapper:hover .tooltip,
+.unit:hover .tooltip,
+.unit-image:hover .tooltip,  /* 이미지에 마우스 올려도 툴팁 보임 */
+.synergy:hover .tooltip {
+	visibility: visible;
+	opacity: 1;
+	pointer-events: auto;
+	transform: translateX(-50%) translateY(-5px);
+}
+
+</style>
+</head>
+<body class="bg-[#0f1215]" style="color: #ffffff;">
+	<main layout:fragment="content" class="space-y-8">
+        <div class="relative w-full h-[200px]  overflow-hidden shadow-lg flex items-center px-[5%] group"
+            style="background-image: url('https://cdn.metatft.com/cdn-cgi/image/width=700,format=auto/https://cdn.metatft.com/file/metatft/images/social_thumbnail_metatft2.png'); background-size: cover; background-position: center;">
+            <div class="absolute inset-0 bg-black/30 group-hover:bg-black/20 transition-colors"></div>
+            
+            <div class="relative z-10 max-w-[50%]">
+                <h2 class="text-2xl font-bold text-white mb-2">Want To Win More Games?</h2>
+                <p class="text-sm text-gray-100 mb-5">Download the free TFT.GG in-game App for more features and live insights</p>
+                <a href="#" class="inline-block text-yellow-400 font-bold hover:text-yellow-300 transition-colors">
+                    Download Now! 👉
+                </a>
+            </div>
+        </div>
+
+        <section class="bg-[#1c2127] p-6 rounded-xl border border-gray-800 shadow-sm">
+            <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                <span class="text-blue-500">🔍</span> 소환사 검색
+            </h3>
+            <form id="summonerForm" class="flex flex-wrap items-end gap-4" onsubmit="searchSummoner(event)">
+                
+                <div class="flex flex-col gap-2">
+                    <label class="text-xs text-gray-400 font-bold">SERVER</label>
+                    <select id="server" name="server" class="bg-[#0f1215] border border-gray-700 rounded px-3 py-2 text-sm focus:border-blue-500 outline-none">
+                        <option value="KR">KR</option>
+                        <option value="JA">JA</option>
+                    </select>
+                </div>
+
+                <div class="flex flex-col gap-2 flex-grow max-w-xs">
+                    <label for="gameName" class="text-xs text-gray-400 font-bold">GAME NAME</label>
+                    <input type="text" id="gameName" name="gameName" placeholder="아이디" required
+                        class="bg-[#0f1215] border border-gray-700 rounded px-4 py-2 text-sm focus:border-blue-500 outline-none">
+                </div>
+
+                <div class="flex flex-col gap-2 w-24">
+                    <label for="tagLine" class="text-xs text-gray-400 font-bold">TAG</label>
+                    <input type="text" id="tagLine" name="tagLine" placeholder="#KR1" required
+                        class="bg-[#0f1215] border border-gray-700 rounded px-4 py-2 text-sm focus:border-blue-500 outline-none">
+                </div>
+
+                <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-8 py-2 rounded transition-all active:scale-95">
+                    조회
+                </button>
+            </form>
+        </section>
+
+        <div class="bg-[#1c2127] rounded-xl p-5 border border-gray-800 shadow-md">
+            <div class="flex items-center gap-2 overflow-x-auto pb-2 border-b border-gray-800 mb-6">
+                <div class="relative group cursor-help shrink-0">
+                    <div class="w-9 h-10 relative">
+                        <img src="https://cdn.dak.gg/tft/images2/tft/traits/background/unique.svg" class="absolute inset-0 w-full h-full">
+                        <img src="https://ddragon.leagueoflegends.com/cdn/15.7.1/img/tft-trait/Trait_Icon_14_SoulKiller.TFT_Set14.png" 
+                            class="absolute inset-0 m-auto w-5 h-5 filter invert">
+                    </div>
+                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-black text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20">
+                        영혼 살해자 (1)
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap gap-4">
+                <div class="w-16 text-center group">
+                    <div class="text-[10px] font-bold text-yellow-500 mb-1">★★★</div>
+                    <div class="relative inline-block">
+                        <div class="w-14 h-14 rounded-lg border-2 border-yellow-500 overflow-hidden">
+                            <img src="https://ddragon.leagueoflegends.com/cdn/15.7.1/img/tft-champion/TFT14_Viego.TFT_Set14.png" class="w-full h-full object-cover object-[90%_50%]">
+                        </div>
+                        <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-black text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity z-20 whitespace-nowrap">
+                            비에고
+                        </div>
+                    </div>
+                    <div class="flex justify-center gap-0.5 mt-1.5">
+                        <div class="relative group/item">
+                            <img src="https://ddragon.leagueoflegends.com/cdn/15.8.1/img/tft-item/TFT_Item_Bloodthirster.png" class="w-4 h-4 rounded shadow-sm">
+                            <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-1.5 py-0.5 bg-gray-800 text-[8px] rounded opacity-0 group-hover/item:opacity-100 transition-opacity whitespace-nowrap">
+                                피바라기
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <br>
+        <script>
+            const date = new Date(1764687600); // JS는 밀리초 단위 사용
+            console.log(date.toLocaleString());
+        </script>
+        <script>
+            function searchSummoner(event) {
+                event.preventDefault(); // 기본 폼 제출 방지
+
+                const serverEl = document.getElementById('server');
+                const gameNameEl = document.getElementById('gameName');
+                const tagLineEl = document.getElementById('tagLine');
+
+                const server = serverEl.value.toLowerCase();
+                const gameName = gameNameEl.value;
+                const tagLine = tagLineEl.value.replace('#', '').toUpperCase();; // # 제거
+
+                // 원하는 경로 구조로 URL 생성
+                const newUrl = `/summoner/${server}/${gameName}/${tagLine}`;
+
+                // 이동
+                window.location.href = newUrl;
+            }
+        </script>
+    </main>
+</body>
+</html>
