@@ -28,6 +28,20 @@ public class MainController {
 	@Autowired
 	MatchService matchService;
 
+	@Autowired
+	private com.tft.web.repository.ParticipantRepository participantRepository;
+
+	@GetMapping("/api/summoner/search-tag/{name}")
+	@org.springframework.web.bind.annotation.ResponseBody
+	public String searchTag(@PathVariable String name) {
+		List<com.tft.web.domain.Participant> participants = participantRepository.findByPaName(name);
+		if (participants != null && !participants.isEmpty()) {
+			// 가장 최근 전적이 있는 유저의 태그를 반환
+			return participants.get(0).getPaTag();
+		}
+		return "KR1"; // 못 찾으면 기본값
+	}
+
 	@GetMapping("/")
 	public String main(Model model) {
         model.addAttribute("name", "TFT Player");
@@ -35,40 +49,21 @@ public class MainController {
 	}
 
     @GetMapping("/summoner/{server}/{gameName}/{tagLine}")
-	public String getSummoner(@PathVariable String server, @PathVariable String gameName, @PathVariable String tagLine, Model model){
+	public String getSummoner(@PathVariable String server, @PathVariable String gameName, @PathVariable String tagLine, 
+							  @RequestParam(defaultValue = "0") int page, Model model){
 		SummonerProfileDto profile = summonerService.getSummonerData(server, gameName, tagLine);
 		
 		String puuid = profile.getPuuid();
 		
-		// matchIds에서 내 데이터만 추출
-		List<String> matchIds = matchService.getMatchIds(puuid);
-		List<MatchApiDto> matches = matchService.getMatchDetail(matchIds, puuid);
+		// 페이징 서비스 호출 (DB 기반 조회 및 초기 수집 포함)
+		Page<MatchApiDto> matchPage = matchService.getRecentMatches(puuid, page);
 		
-		// // 서비스 호출
-		// Page<MatchApiDto> matchPage = matchService.getRecentMatches(puuid, page);
-		// List<MatchApiDto> matches = matchPage.getContent();
-		// // 콘솔 출력 확인
-		// System.out.println("=== 검증 시작 ===");
-		// if (!matches.isEmpty()) {
-		// 	// processDtoForView가 호출되었으므로 participants 리스트에는 '나' 1명만 들어있음
-		// 	ParticipantDto my = matches.get(0).getInfo().getParticipants().get(0);
-		// 	System.out.println("내 등수: " + my.getPlacement());
-		// 	System.out.println("골드: " + my.getGold_left());
-			
-		// 	if (!my.getUnits().isEmpty()) {
-		// 		System.out.println("첫 유닛 이름: " + my.getUnits().get(0).getChampionName());
-		// 		System.out.println("첫 유닛 이미지: " + my.getUnits().get(0).getChampionImg());
-		// 	}
-		// }
-		// System.out.println("=== 검증 종료 ===");
-		
-
-		model.addAttribute("matches", matches);
+		model.addAttribute("matches", matchPage.getContent());
 		model.addAttribute("profile", profile);
-		// model.addAttribute("matches", matchContent);
-		// model.addAttribute("hasNext", matchPage.hasNext());       // 다음 페이지 존재 여부 (true/false)
-		// model.addAttribute("currentPage", matchPage.getNumber()); // 현재 페이지 번호 (0)
-		// model.addAttribute("totalMatches", matchPage.getTotalElements()); // 전체 판수 (예: 190)
+		model.addAttribute("server", server);
+		model.addAttribute("currentPage", page);
+		model.addAttribute("hasNext", matchPage.hasNext());
+		model.addAttribute("totalMatches", matchPage.getTotalElements());
 
 		return "tft/summoner";
 	}

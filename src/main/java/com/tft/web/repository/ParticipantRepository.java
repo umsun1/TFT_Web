@@ -13,10 +13,20 @@ import com.tft.web.model.dto.MatchApiDto;
 @Repository
 public interface ParticipantRepository extends JpaRepository<Participant, Integer> {
 
-    List<Participant> findByPaPuuidAndGameInfo_GaDatetimeAfter(String puuid, LocalDateTime of);
+        List<Participant> findByPaPuuidAndGameInfo_GaDatetimeAfter(String puuid, LocalDateTime of);
 
-    List<Participant> findByPaPuuid(String puuid);
-
-    Page<MatchApiDto> findByPaPuuidOrderByGameInfo_GaDatetimeDesc(String puuid, Pageable pageable);
     
-}
+
+        List<Participant> findByPaPuuid(String puuid);
+
+    
+
+        Page<MatchApiDto> findByPaPuuidOrderByGameInfo_GaDatetimeDesc(String puuid, Pageable pageable);
+
+        
+
+        int countByPaPuuid(String puuid);
+
+        @org.springframework.data.jpa.repository.Query("SELECT p FROM Participant p WHERE p.paName = :name ORDER BY p.gameInfo.gaDatetime DESC")
+        List<Participant> findByPaName(String name);
+    }

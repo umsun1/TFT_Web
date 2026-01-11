@@ -60,52 +60,31 @@ public class MatchServiceImp implements MatchService {
 
     @Override
     public List<String> getMatchIds(String puuid) {
-        List<String> allMatchIds = new ArrayList<>();
-        int start = 0;
-        int count = 100; // 한 번에 가져올 최대치
-        long endTime = 1764687600; // 2025년 12월 3일 기준
+        return getMatchIds(puuid, 20); // 기본적으로 최근 20개만 가져옴
+    }
 
+    public List<String> getMatchIds(String puuid, int count) {
         HttpHeaders headers = new HttpHeaders();
         headers.set("X-Riot-Token", apiKey);
         HttpEntity<Void> entity = new HttpEntity<>(headers);
 
+        long seasonStartEpoch = 1764687600L; // 2025년 12월 3일 기준
+
         try {
-            while (true) {
-                // start 파라미터를 계속 증가시켜서 다음 페이지를 요청함
-                String url = "https://asia.api.riotgames.com/tft/match/v1/matches/by-puuid/" + puuid 
-                        + "/ids?startTime=" + endTime 
-                        + "&start=" + start 
-                        + "&count=" + count;
+            // startTime을 추가하여 전시즌 데이터 유입 방지
+            String url = "https://asia.api.riotgames.com/tft/match/v1/matches/by-puuid/" + puuid 
+                    + "/ids?start=0&count=" + count
+                    + "&startTime=" + seasonStartEpoch;
 
-                ResponseEntity<List<String>> response = restTemplate.exchange(
-                        url, HttpMethod.GET, entity,
-                        new org.springframework.core.ParameterizedTypeReference<List<String>>() {}
-                );
+            ResponseEntity<List<String>> response = restTemplate.exchange(
+                    url, HttpMethod.GET, entity,
+                    new org.springframework.core.ParameterizedTypeReference<List<String>>() {}
+            );
 
-                List<String> batch = response.getBody();
-
-                // 1. 결과가 없거나 빈 리스트면 더 이상 가져올 게 없으므로 종료
-                if (batch == null || batch.isEmpty()) {
-                    break;
-                }
-
-                allMatchIds.addAll(batch);
-
-                // 2. 만약 가져온 개수가 count(100)보다 적다면, 그게 마지막 페이지라는 뜻이므로 종료
-                if (batch.size() < count) {
-                    break;
-                }
-
-                // 3. 다음 100개를 가져오기 위해 시작 지점(start)을 100만큼 뒤로 미룸
-                start += count;
-            }
-            
-            System.out.println("수집된 총 매치 ID 개수: " + allMatchIds.size());
-            return allMatchIds;
-
+            return response.getBody() != null ? response.getBody() : new ArrayList<>();
         } catch (Exception e) {
-            System.err.println("매치 ID 전수 조사 실패: " + e.getMessage());
-            return allMatchIds; // 에러 발생 전까지 수집된 데이터라도 반환
+            System.err.println("매치 ID 조회 실패: " + e.getMessage());
+            return new ArrayList<>();
         }
     }
 
@@ -225,75 +204,72 @@ public class MatchServiceImp implements MatchService {
     }
 
     private MatchApiDto processDtoForView(MetadataDto metadata, InfoDto info, String myPuuid) {
+        // 1. 모든 참가자 정보를 등수(Placement) 순으로 정렬
+        List<ParticipantDto> allParticipants = info.getParticipants().stream()
+                .sorted(Comparator.comparingInt(ParticipantDto::getPlacement))
+                .collect(Collectors.toList());
+
         ParticipantDto myParticipant = null;
-        for (ParticipantDto p : info.getParticipants()) {
+
+        // 2. 모든 참가자에 대해 이미지 매핑 및 가공 수행
+        for (ParticipantDto p : allParticipants) {
+            // 내가 누구인지 체크 (나중에 헤더 등에 표시용)
             if (myPuuid.equals(p.getPuuid())) {
                 myParticipant = p;
-                
-                // 1. 전설이 이미지 매핑
-                if (myParticipant.getCompanion() != null) {
-                    int itemId = myParticipant.getCompanion().getItem_ID();
-                    String imgUrl = tftStaticDataService.getTacticianImgUrl(itemId);
-                    myParticipant.getCompanion().setCompanionImg(imgUrl);
-                }
+            }
+            
+            // 전설이 이미지 매핑
+            if (p.getCompanion() != null) {
+                int itemId = p.getCompanion().getItem_ID();
+                String imgUrl = tftStaticDataService.getTacticianImgUrl(itemId);
+                p.getCompanion().setCompanionImg(imgUrl);
+            }
 
-                // 2. 유닛(챔피언) 및 아이템 이미지 매핑 (필터링 포함)
-                if (myParticipant.getUnits() != null) {
-                    List<UnitDto> filteredUnits = new ArrayList<>();
-                    for (UnitDto unit : myParticipant.getUnits()) {
-                        // 아타칸 제외 로직
-                        if (unit.getCharacterId().toLowerCase().contains("atakhan")) continue;
+            // 유닛 및 아이템 가공
+            if (p.getUnits() != null) {
+                List<UnitDto> processedUnits = new ArrayList<>();
+                for (UnitDto unit : p.getUnits()) {
+                    if (unit.getCharacterId().toLowerCase().contains("atakhan")) continue;
 
-                        unit.setChampionImg(tftStaticDataService.getUnitImgUrl(unit.getCharacterId()));
-                        
-                        if (unit.getItems() != null && !unit.getItems().isEmpty()) {
-                            List<String> itemUrls = new ArrayList<>();
-                            List<String> itemKoNames = new ArrayList<>();
-                            for (String itemName : unit.getItems()) {
-                                itemUrls.add(tftStaticDataService.getItemImgUrlByName(itemName));
-                                String koItemName = tftStaticDataService.getItemKoName(itemName);
-                                itemKoNames.add(koItemName);
-                            }
-                            unit.setItemImgUrls(itemUrls);
-                            unit.setItems(itemKoNames);
+                    unit.setChampionImg(tftStaticDataService.getUnitImgUrl(unit.getCharacterId()));
+                    
+                    if (unit.getItems() != null && !unit.getItems().isEmpty()) {
+                        List<String> itemUrls = new ArrayList<>();
+                        List<String> itemKoNames = new ArrayList<>();
+                        for (String itemName : unit.getItems()) {
+                            itemUrls.add(tftStaticDataService.getItemImgUrlByName(itemName));
+                            itemKoNames.add(tftStaticDataService.getItemKoName(itemName));
                         }
-                        String koName = tftStaticDataService.getUnitKoName(unit.getCharacterId());
-                        unit.setChampionName(koName);
-                        filteredUnits.add(unit);
+                        unit.setItemImgUrls(itemUrls);
+                        unit.setItems(itemKoNames);
                     }
-                    myParticipant.setUnits(filteredUnits);
+                    unit.setChampionName(tftStaticDataService.getUnitKoName(unit.getCharacterId()));
+                    processedUnits.add(unit);
                 }
+                // 코스트 순으로 정렬하여 보기 좋게 만듦
+                processedUnits.sort((u1, u2) -> Integer.compare(u2.getCost(), u1.getCost()));
+                p.setUnits(processedUnits);
+            }
 
-                // 3. 시너지 가공 및 정렬 로직 추가
-                if (myParticipant.getTraits() != null) {
-                    Map<Integer, Integer> priorityMap = Map.of(3, 1, 5, 2, 4, 3, 2, 4, 1, 5);
-
-                    List<TraitDto> sortedTraits = myParticipant.getTraits().stream()
-                        .filter(t -> t.getTier_current() > 0)
-                        .peek(t -> {
-                            // 1. 아이콘 URL 추출 (이때 t.getName()은 아직 "TFT16_Glutton" 임)
-                            String iconUrl = tftStaticDataService.getTraitIconUrl(t.getName());
-                            t.setIconUrl(iconUrl);
-                            
-                            // 2. 배경 URL 설정
-                            t.setBgUrl(getSynergyBgUrl(t.getStyle()));
-                            
-                            // 3. 마지막에 이름을 한글로 교체 (이제부터 t.getName()은 "대식가")
-                            String koName = tftStaticDataService.getTraitKoName(t.getName());
-                            t.setName(koName);
-                        })
-                        .sorted(Comparator.comparingInt(t -> priorityMap.getOrDefault(t.getStyle(), 99)))
-                        .collect(Collectors.toList());
-
-                    myParticipant.setTraits(sortedTraits);
-                }
-                break;
+            // 시너지 가공
+            if (p.getTraits() != null) {
+                Map<Integer, Integer> priorityMap = Map.of(3, 1, 5, 2, 4, 3, 2, 4, 1, 5);
+                List<TraitDto> sortedTraits = p.getTraits().stream()
+                    .filter(t -> t.getTier_current() > 0)
+                    .peek(t -> {
+                        t.setIconUrl(tftStaticDataService.getTraitIconUrl(t.getName()));
+                        t.setBgUrl(getSynergyBgUrl(t.getStyle()));
+                        t.setName(tftStaticDataService.getTraitKoName(t.getName()));
+                    })
+                    .sorted(Comparator.comparingInt(t -> priorityMap.getOrDefault(t.getStyle(), 99)))
+                    .collect(Collectors.toList());
+                p.setTraits(sortedTraits);
             }
         }
 
-        if (myParticipant == null) return null;
-
-        info.setParticipants(List.of(myParticipant));
+        // 3. '나'를 리스트의 맨 앞으로 이동 로직 제거 (1-8등 순차 노출 유지)
+        
+        info.setParticipants(allParticipants);
         MatchApiDto match = new MatchApiDto();
         match.setMetadata(metadata);
         match.setInfo(info);
@@ -314,22 +290,28 @@ public class MatchServiceImp implements MatchService {
 
     @Override
     public Page<MatchApiDto> getRecentMatches(String puuid, int page) {
-        // 1. 우선 DB 조회를 시도
+        // 1. [추가] 실시간성 확보: 0페이지 조회 시 최신 5게임 ID를 체크하여 즉시 수집
+        if (page == 0) {
+            List<String> latestIds = getMatchIds(puuid, 5);
+            for (String matchId : latestIds) {
+                if (!gameInfoRepository.existsByGaId(matchId)) {
+                    getSingleMatchDetail(matchId, puuid); // 내부에서 DB 저장 수행
+                }
+            }
+        }
+
+        // 2. DB 조회를 시도
         List<Participant> allParticipants = participantRepository.findByPaPuuid(puuid);
 
-        // 2. [추가] DB에 데이터가 한 건도 없다면? 외부 API에서 가져오기
+        // 3. DB에 데이터가 한 건도 없다면? 외부 API에서 가져오기 (초기 진입자용)
         if (allParticipants == null || allParticipants.isEmpty()) {
-            System.out.println("DB에 데이터가 없습니다. API 호출을 시작합니다...");
+            System.out.println("DB에 데이터가 없습니다. 초기 데이터(20개) API 호출을 시작합니다...");
             
-            // Match ID 리스트 가져오기 (전수 조사)
-            List<String> matchIds = getMatchIds(puuid);
+            // Match ID 리스트 가져오기 (최근 20개만 즉시 수집)
+            List<String> matchIds = getMatchIds(puuid, 20);
             
             if (!matchIds.isEmpty()) {
-                // 상세 정보 호출 및 DB 저장 (getMatchDetail 내부에서 saveMatchToDatabase 호출됨)
-                // 최근 20개만 먼저 수집하거나, 전체를 수집하거나 선택 가능
                 getMatchDetail(matchIds, puuid); 
-                
-                // 저장이 완료되었으므로 다시 DB에서 불러옴
                 allParticipants = participantRepository.findByPaPuuid(puuid);
             }
         }

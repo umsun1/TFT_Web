@@ -29,6 +29,15 @@ public  class SummonerServiceImp implements SummonerService{
     @Autowired
     private ParticipantRepository participantRepository;
 
+    @Autowired
+    private com.tft.web.repository.MatchFetchQueueRepository queueRepository;
+
+    @Autowired
+    private com.tft.web.repository.LpHistoryRepository lpHistoryRepository;
+
+    @Autowired
+    private TftStaticDataService tftStaticDataService;
+
     private final RestTemplate restTemplate = new RestTemplate();
 
     @Override
@@ -37,6 +46,24 @@ public  class SummonerServiceImp implements SummonerService{
         RiotAccountDto account = getAccountByRiotId(gameName, tagLine);
         if (account == null) return null;
         String puuid = account.getPuuid();
+
+        // [수정] 배치를 통한 데이터 수집 요청 (새로운 전적 확인을 위해 상태 갱신)
+        java.util.Optional<com.tft.web.domain.MatchFetchQueue> existingQueue = queueRepository.findByMfqIdAndMfqType(puuid, "SUMMONER");
+        if (existingQueue.isPresent()) {
+            com.tft.web.domain.MatchFetchQueue queue = existingQueue.get();
+            if (!"FETCHING".equals(queue.getMfqStatus())) {
+                queue.setMfqStatus("READY");
+                queue.setMfqPriority(10);
+                queueRepository.save(queue);
+            }
+        } else {
+            queueRepository.save(com.tft.web.domain.MatchFetchQueue.builder()
+                    .mfqId(puuid)
+                    .mfqType("SUMMONER")
+                    .mfqStatus("READY")
+                    .mfqPriority(10)
+                    .build());
+        }
 
         // 2. PUUID → TFT League (배열로 오기 때문에 첫 번째 요소 추출)
         TftLeagueEntryDto league = getTftLeagueByPuuid(puuid);
@@ -51,19 +78,136 @@ public  class SummonerServiceImp implements SummonerService{
         profile.setPuuid(puuid);
 
         if (league != null) {
-            Map<String, Object> stats = getWinStatistics(profile.getPuuid());
-            double wins = league.getWins();
-            double totalGames = league.getWins() + league.getLosses();
-            double avgPlacement = getAveragePlacement(puuid);
+            // [추가] LP 변화 기록 (마지막 기록과 다를 때만 저장)
+            com.tft.web.domain.LpHistory lastRecord = lpHistoryRepository.findTopByPuuidOrderByCreatedAtDesc(puuid);
+            if (lastRecord == null || lastRecord.getLp() != league.getLeaguePoints() || !lastRecord.getTier().equals(league.getTier())) {
+                lpHistoryRepository.save(com.tft.web.domain.LpHistory.builder()
+                        .puuid(puuid)
+                        .tier(league.getTier())
+                        .rank_str(league.getRank())
+                        .lp(league.getLeaguePoints())
+                        .build());
+            }
+
+            // 1. 전체 통계 계산 (DB 기반)
+            List<Participant> allMatches = participantRepository.findByPaPuuid(puuid);
+            
+            if (!allMatches.isEmpty()) {
+                double totalPlacement = allMatches.stream().mapToInt(Participant::getPaPlacement).sum();
+                long wins = allMatches.stream().filter(p -> p.getPaPlacement() == 1).count();
+                long top4 = allMatches.stream().filter(p -> p.getPaPlacement() <= 4).count();
+                
+                profile.setAvgPlacement(totalPlacement / allMatches.size());
+                profile.setWinRate((double) wins / allMatches.size() * 100.0);
+                profile.setTop4Rate((double) top4 / allMatches.size());
+                profile.setWinCount(wins);
+            }
+
+            // 2. 최근 20게임 상세 통계 (차트용)
+            List<Participant> recentMatches = allMatches.stream()
+                    .sorted((p1, p2) -> p2.getGameInfo().getGaDatetime().compareTo(p1.getGameInfo().getGaDatetime()))
+                    .limit(20)
+                    .collect(java.util.stream.Collectors.toList());
+
+            if (!recentMatches.isEmpty()) {
+                int[] counts = new int[8];
+                double recentTotalPlacement = 0;
+                int recentTop4 = 0;
+                int recentWins = 0;
+
+                for (Participant p : recentMatches) {
+                    int place = p.getPaPlacement();
+                    if (place >= 1 && place <= 8) counts[place - 1]++;
+                    recentTotalPlacement += place;
+                    if (place <= 4) recentTop4++;
+                    if (place == 1) recentWins++;
+                }
+
+                profile.setRankCounts(counts);
+                profile.setRecentAvgPlacement(recentTotalPlacement / recentMatches.size());
+                profile.setRecentTop4Rate((double) recentTop4 / recentMatches.size() * 100.0);
+                profile.setRecentWinRate((double) recentWins / recentMatches.size() * 100.0);
+
+                // [추가/수정] 업적 계산 로직 강화
+                List<String> achievements = new java.util.ArrayList<>();
+                
+                // 1. 연승 중 (최근 3게임 연속 Top 4)
+                if (recentMatches.size() >= 3) {
+                    boolean isWinningStreak = true;
+                    for (int i = 0; i < 3; i++) {
+                        if (recentMatches.get(i).getPaPlacement() > 4) {
+                            isWinningStreak = false;
+                            break;
+                        }
+                    }
+                    if (isWinningStreak) achievements.add("🔥 연승 중");
+                }
+
+                // 2. 순방의 신 (Top 4 확률 75% 이상)
+                if (profile.getRecentTop4Rate() >= 75.0) achievements.add("📈 순방의 신");
+
+                // 3. 1등 수집가 (1등 4회 이상)
+                if (recentWins >= 4) achievements.add("👑 1등 수집가");
+
+                // 4. 리롤 장인 (평균 3성 유닛 2.0개 이상)
+                double avg3Stars = recentMatches.stream()
+                    .mapToDouble(p -> p.getUnits().stream().filter(u -> u.getUnTier() == 3).count())
+                    .average().orElse(0);
+                if (avg3Stars >= 2.0) achievements.add("✨ 리롤 장인");
+
+                // 5. 고밸류 지향 (평균 4, 5코스트 유닛 4개 이상)
+                double avgHighValue = recentMatches.stream()
+                    .mapToDouble(p -> p.getUnits().stream().filter(u -> u.getUnCost() >= 4).count())
+                    .average().orElse(0);
+                if (avgHighValue >= 4.0) achievements.add("💎 고밸류 지향");
+
+                // 6. 시너지 술사 (평균 활성 시너지 7개 이상)
+                double avgTraits = recentMatches.stream()
+                    .mapToDouble(p -> p.getTraits().size())
+                    .average().orElse(0);
+                if (avgTraits >= 7.0) achievements.add("🔮 시너지의 신");
+
+                // 7. 레벨업 광신도 (9레벨 도달율 30% 이상)
+                long level9Count = recentMatches.stream().filter(p -> p.getPaLevel() >= 9).count();
+                if ((double) level9Count / recentMatches.size() >= 0.3) achievements.add("🚀 후전드");
+
+                // 8. 시너지 애호가 (한글화 적용)
+                Map<String, Long> traitCounts = recentMatches.stream()
+                    .flatMap(p -> p.getTraits().stream())
+                    .collect(java.util.stream.Collectors.groupingBy(com.tft.web.domain.Trait::getTrName, java.util.stream.Collectors.counting()));
+                
+                traitCounts.entrySet().stream()
+                    .max(Map.Entry.comparingByValue())
+                    .ifPresent(entry -> {
+                        if (entry.getValue() >= 6) { // 20판 중 6번 이상
+                            String koTraitName = tftStaticDataService.getTraitKoName(entry.getKey());
+                            achievements.add("#" + koTraitName + " 애호가");
+                        }
+                    });
+
+                profile.setAchievements(achievements);
+            }
+
+            // [추가] LP 히스토리 조회 (최근 15개)
+            List<com.tft.web.domain.LpHistory> historyList = lpHistoryRepository.findTop15ByPuuidOrderByCreatedAtDesc(puuid);
+            java.util.Collections.reverse(historyList); // 시간순 정렬
+            profile.setLpHistory(historyList.stream().map(com.tft.web.domain.LpHistory::getLp).collect(java.util.stream.Collectors.toList()));
+            profile.setLpHistoryLabels(historyList.stream()
+                .map(h -> h.getCreatedAt().format(java.time.format.DateTimeFormatter.ofPattern("MM-dd")))
+                .collect(java.util.stream.Collectors.toList()));
+            profile.setLpHistoryTiers(historyList.stream()
+                .map(h -> h.getTier() + " " + h.getRank_str())
+                .collect(java.util.stream.Collectors.toList()));
+
             profile.setTier(league.getTier());
             profile.setRank(league.getRank());
             profile.setLp(league.getLeaguePoints());
             profile.setWins(league.getWins());
             profile.setLosses(league.getLosses());
-            profile.setTop4Rate(wins/totalGames);
-            profile.setAvgPlacement(avgPlacement);
-            profile.setWinCount((long) stats.get("winCount"));
-            profile.setWinRate((double) stats.get("winRate"));
+            
+            profile.setCollectedCount(allMatches.size());
+            profile.setTotalCount(league.getWins() + league.getLosses());
+            profile.setFetching(profile.getCollectedCount() < profile.getTotalCount());
 
         } else {
             // 리그 정보가 없는 경우 (언랭크)

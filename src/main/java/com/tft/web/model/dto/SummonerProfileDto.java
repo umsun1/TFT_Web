@@ -28,4 +28,17 @@ public class SummonerProfileDto {
     private double recentTop4Rate;
     private double recentWinRate;
     private int[] rankCounts; // [1등횟수, 2등횟수, ..., 8등횟수] -> 차트용
+
+    // [추가] 데이터 수집 상태
+    private boolean isFetching;
+    private int collectedCount;
+    private int totalCount; // 이건 리그 정보 등에서 가져오거나 큐 정보에서 추산
+
+    // [추가] LP 변화 추이 데이터
+    private java.util.List<Integer> lpHistory;
+    private java.util.List<String> lpHistoryLabels;
+    private java.util.List<String> lpHistoryTiers;
+
+    // [추가] 업적 태그
+    private java.util.List<String> achievements;
 }

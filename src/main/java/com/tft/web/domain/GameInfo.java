@@ -32,7 +32,7 @@ public class GameInfo {
     @Column(name = "GA_DATETIME", nullable = false)
     private LocalDateTime gaDatetime;
 
-    @Column(name = "GA_VERSION", length = 50)
+    @Column(name = "GA_VERSION", length = 255)
     private String gaVersion;
 
     // 양방향 관계: 부모인 게임정보를 지우면 참가자 정보도 같이 지워지도록 설정(Cascade)
