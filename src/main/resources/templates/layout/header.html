@@ -18,29 +18,37 @@
                     
                     <div class="hidden md:flex ml-10 items-baseline space-x-4">
                         <a href="#" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">가이드</a>
-                        <a href="#" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">통계</a>
+                        <a th:href="@{/meta}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">통계</a>
+                        <a th:href="@{/board}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">배치툴</a>
                     </div>
                 </div>
 
                 <div class="flex items-center gap-3">
-                    <!-- 헤더 검색창 (우측 이동) -->
-                    <div class="hidden sm:flex items-center mr-2">
-                        <div class="flex bg-[#0f1215] border border-gray-700 rounded-lg overflow-hidden focus-within:border-blue-500 transition-all shadow-sm">
-                            <select id="headerServer" class="bg-transparent text-gray-500 text-[10px] px-2 border-r border-gray-700 outline-none cursor-pointer hover:text-white">
-                                <option value="kr">KR</option>
-                                <option value="jp">JP</option>
-                                <option value="na">NA</option>
-                            </select>
-                            <input type="text" id="headerSearchInput" 
-                                   placeholder="소환사 검색" 
-                                   class="bg-transparent text-white text-xs px-3 py-1.5 w-48 outline-none placeholder-gray-600">
-                            <button onclick="headerSearch()" class="px-2.5 text-gray-500 hover:text-blue-400 transition-colors">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
+                    <!-- 헤더 검색창 (분리형) -->
+                    <form onsubmit="headerSearch(event)" class="hidden sm:flex items-center gap-2 mr-2">
+                        <!-- 서버 선택 -->
+                        <select id="headerServer" class="bg-[#0f1215] border border-gray-700 rounded px-2 py-1.5 text-xs text-gray-300 focus:border-blue-500 outline-none cursor-pointer">
+                            <option value="kr">KR</option>
+                            <option value="jp">JP</option>
+                            <option value="na">NA</option>
+                        </select>
+                        
+                        <!-- 소환사명 -->
+                        <input type="text" id="headerGameName" 
+                               placeholder="아이디" required
+                               class="bg-[#0f1215] border border-gray-700 rounded px-3 py-1.5 text-xs text-white w-32 focus:border-blue-500 outline-none placeholder-gray-600 transition-all focus:w-40">
+                        
+                        <!-- 태그 -->
+                        <input type="text" id="headerTagLine" 
+                               placeholder="#KR1" required
+                               class="bg-[#0f1215] border border-gray-700 rounded px-2 py-1.5 text-xs text-white w-16 focus:border-blue-500 outline-none placeholder-gray-600 text-center">
+
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded text-xs font-bold transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </button>
+                    </form>
 
                     <button class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-1.5 rounded text-xs font-bold transition-colors shadow-lg shadow-blue-900/20">
                         로그인
@@ -50,36 +58,19 @@
             </div>
         </nav>
         <script>
-            async function headerSearch() {
+            function headerSearch(event) {
+                event.preventDefault();
                 const server = document.getElementById('headerServer').value;
-                const fullInput = document.getElementById('headerSearchInput').value.trim();
+                const name = document.getElementById('headerGameName').value.trim();
+                let tag = document.getElementById('headerTagLine').value.trim();
                 
-                if (!fullInput) return;
+                if (!name || !tag) return;
 
-                let name, tag;
-                if (fullInput.includes('#')) {
-                    [name, tag] = fullInput.split('#');
-                } else {
-                    name = fullInput;
-                    // 이름만 있는 경우 서버에 태그 검색 요청
-                    try {
-                        const response = await fetch(`/api/summoner/search-tag/${encodeURIComponent(name)}`);
-                        tag = await response.text();
-                    } catch (e) {
-                        tag = 'KR1';
-                    }
-                }
+                // 태그에서 # 제거
+                tag = tag.replace('#', '');
 
-                if (name && tag) {
-                    window.location.href = `/summoner/${server}/${encodeURIComponent(name.trim())}/${encodeURIComponent(tag.trim())}`;
-                }
+                window.location.href = `/summoner/${server}/${encodeURIComponent(name)}/${encodeURIComponent(tag)}`;
             }
-
-            document.getElementById('headerSearchInput')?.addEventListener('keypress', function (e) {
-                if (e.key === 'Enter') {
-                    headerSearch();
-                }
-            });
         </script>
     </header>
 </body>

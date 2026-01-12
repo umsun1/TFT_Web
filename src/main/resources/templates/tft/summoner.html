@@ -91,6 +91,15 @@
 							</span>
 						</div>
 						<canvas id="rankChart" height="120"></canvas>
+						<!-- 최근 20경기 등수 뱃지 (10개씩 정렬) -->
+						<div class="grid grid-cols-10 gap-1 mt-4">
+							<div th:each="placement : ${profile.recentPlacements}" 
+								 th:text="${placement}"
+								 class="w-6 h-6 rounded flex items-center justify-center text-[11px] font-bold text-white shadow-sm"
+								 th:classappend="${placement == 1} ? 'bg-[#1fb27c]' : 
+												(${placement <= 4} ? 'bg-[#3d6ad6]' : 'bg-[#adb2bb]')">
+							</div>
+						</div>
 					</div>
 					<div class="col-span-3 flex flex-col justify-center items-center">
 						<p class="text-xs text-gray-500 uppercase font-bold">TOP 4 확률</p>
@@ -100,7 +109,7 @@
 						</div>
 					</div>
 					<!-- LP 변화 추이 -->
-					<div class="col-span-4 border-l border-gray-800 pl-4 flex flex-col">
+					<div class="col-span-4 border-l border-gray-800 pl-4 flex flex-col justify-center">
 						<h3 class="text-xs text-gray-400 font-bold uppercase tracking-wider mb-2">LP 변화 추이</h3>
 						<div class="relative h-[120px] w-full">
 							<canvas id="lpChart"></canvas>
@@ -132,7 +141,7 @@
 																(${unit.cost == 4} ? 'border-purple-500' : 
 																(${unit.cost == 2} ? 'border-[#00b0f0]' : 
 																(${unit.cost == 1} ? 'border-[#11b288]' : 'border-[#808080]')))">
-												<img th:src="${unit.championImg}" class="w-full h-full object-cover object-[right_top]">
+												<img th:src="${unit.championImg}" class="w-full h-full object-cover object-[90%_50%]">
 											</div>
 											<!-- 챔피언 ★ -->
 											<div class="absolute -top-2 left-0 right-0 flex justify-center text-[8px] text-yellow-400 drop-shadow-md" th:if="${unit.star > 1}">

@@ -41,4 +41,7 @@ public class SummonerProfileDto {
 
     // [추가] 업적 태그
     private java.util.List<String> achievements;
+
+    // [추가] 최근 20게임 등수 리스트
+    private java.util.List<Integer> recentPlacements;
 }

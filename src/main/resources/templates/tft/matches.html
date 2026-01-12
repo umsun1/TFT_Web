@@ -1,186 +1,93 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
-	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-	layout:decorate="~{layout/layout.html}">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>TFT Matches - Analytics</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --hex-w: 60px; --hex-h: 68px; --hex-my: -16px; --hex-mx: 2px;
+        }
+        body { background-color: #0f1012; color: #fff; font-family: sans-serif; }
+
+        /* 육각형 스타일 */
+        .hex {
+            width: var(--hex-w); height: var(--hex-h);
+            background-color: #2a2e35; margin: 0 var(--hex-mx);
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s; position: relative;
+        }
+        .hex:hover { background-color: #3f444d; transform: scale(1.1); z-index: 10; cursor: pointer; }
+        .hex::before {
+            content: ""; position: absolute; width: 92%; height: 92%;
+            background-color: #1a1c21; clip-path: inherit; z-index: -1;
+        }
+        .hex-row { display: flex; margin-top: var(--hex-my); }
+        .hex-row:first-child { margin-top: 0; }
+        .hex-row.even { transform: translateX(calc((var(--hex-w) + (var(--hex-mx) * 2)) / 2)); }
+
+        /* 시너지/챔피언 아이콘 공통 */
+        .icon-box { background-color: #1a1c21; border: 1px solid #2d3035; border-radius: 4px; }
+    </style>
 </head>
-<body style="background-color: #212529; color: #ffffff;">
-    <main layout:fragment="content" class="bg-[#0f1215] min-h-screen text-white p-6">
-        <!-- <div class="max-w-7xl mx-auto mb-4">
-            <p class="text-gray-400" th:text="'Hello, ' + ${name} + '! 님의 전적 리포트입니다.'"></p>
-        </div> -->
+<body class="p-8">
 
-        <div class="max-w-7xl mx-auto grid grid-cols-12 gap-6">
+    <div class="max-w-6xl mx-auto flex flex-col gap-6">
 
-			<!-- Summoner Profile -->
-            <aside class="col-span-3 space-y-4">
-                <div class="bg-[#1c2127] rounded-lg p-6 flex flex-col items-center border border-gray-800">
-                    <div class="relative mb-4">
-                        <div class="w-24 h-24 bg-blue-900/20 rounded-full flex items-center justify-center border-2 border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.5)]">
-                            <span class="text-4xl">💎</span>
-                        </div>
-                    </div>
-                    <div class="text-center">
-                        <h2 class="text-xl font-bold italic">바다새 <span class="text-gray-500 text-sm font-normal">#KR1</span></h2>
-                        <p class="text-blue-400 font-bold mt-1">다이아몬드 IV 49 LP</p>
-                        <p class="text-gray-500 text-xs mt-1">랭크 #4,018 (상위 0.4%)</p>
-                    </div>
+        <div class="flex gap-6 justify-center items-start">
 
-                    <div class="w-full mt-8 space-y-3">
-                        <div class="flex justify-between items-center bg-[#12161b] p-3 rounded">
-                            <span class="text-xs text-gray-400">평균 등수</span>
-                            <span class="text-lg font-bold text-yellow-500 tracking-tight">4.22</span>
-                        </div>
-                        <div class="grid grid-cols-2 gap-2">
-                            <div class="bg-[#12161b] p-3 rounded text-center">
-                                <p class="text-xs text-gray-400 mb-1">순방 확률</p>
-                                <p class="text-md font-bold text-green-500">56.9%</p>
-                            </div>
-                            <div class="bg-[#12161b] p-3 rounded text-center">
-                                <p class="text-xs text-gray-400 mb-1">승률</p>
-                                <p class="text-md font-bold text-white">11.4%</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="w-full mt-6 flex flex-wrap gap-2">
-                        <span class="bg-green-900/20 text-green-500 text-[10px] px-2 py-1 rounded border border-green-900/50">#녹서스 애호가</span>
-                        <span class="bg-orange-900/30 text-orange-500 text-[10px] px-2 py-1 rounded font-bold">🔥 연승 중</span>
-                        <span class="bg-gray-800 text-gray-400 text-[10px] px-2 py-1 rounded">#후반 지향</span>
-                    </div>
+            <div class="w-48 icon-box p-3 flex flex-col gap-2 min-h-[300px]">
+                <p class="text-[11px] text-gray-500 mb-2">시너지 목록</p>
+                <div class="flex items-center gap-2 bg-[#2d3035] p-2 rounded text-xs border-l-4 border-yellow-500">
+                    <div class="w-5 h-5 bg-gray-600 rounded-full"></div> <span>전사 (3)</span>
                 </div>
-            </aside>
+                <div class="flex items-center gap-2 bg-[#2d3035] p-2 rounded text-xs border-l-4 border-gray-400">
+                    <div class="w-5 h-5 bg-gray-600 rounded-full"></div> <span>화염 (2)</span>
+                </div>
+                <div class="text-[10px] text-gray-600 mt-4 text-center">기물을 배치하면<br>시너지가 활성화됩니다.</div>
+            </div>
 
-            <main class="col-span-9 space-y-6">
-                <!-- 통계 정보 -->
-                <section class="bg-[#1c2127] rounded-lg p-6 grid grid-cols-12 gap-8 border border-gray-800">
-                    <div class="col-span-5 border-r border-gray-800 pr-4">
-                        <div class="flex justify-between items-end mb-4">
-                            <h3 class="text-xs text-gray-400 font-bold uppercase tracking-wider">지난 20게임 등수 분포</h3>
-							<!-- 사용자 데이터 가져와서 4.00을 수정해야함 -->
-                            <span class="text-xl font-black text-yellow-500">4.00 <small class="text-[10px] text-gray-500 font-normal">평균</small></span>
-                        </div>
-                        <canvas id="rankChart" height="120"></canvas>
-                    </div>
-
-					<!-- 플레이 스타일(부가 기능) -->
-                    <!-- <div class="col-span-4 border-r border-gray-800 px-4">
-                        <h3 class="text-xs text-gray-400 font-bold uppercase tracking-wider mb-6">플레이 스타일</h3>
-                        <div class="space-y-5">
-                            <div class="group">
-                                <div class="flex justify-between text-[10px] mb-1 px-1">
-                                    <span class="text-gray-400">유연함</span>
-                                    <span class="text-gray-400 font-bold text-yellow-500">강제 플레이어</span>
-                                </div>
-                                <div class="w-full h-1 bg-gray-800 rounded-full relative">
-                                    <div class="absolute left-1/4 top-1/2 -translate-y-1/2 w-3 h-3 bg-yellow-500 rounded-full border-2 border-[#1c2127] shadow-sm"></div>
-                                </div>
-                            </div>
-                            <div class="group">
-                                <div class="flex justify-between text-[10px] mb-1 px-1">
-                                    <span class="text-gray-400 font-bold text-yellow-500">공격력</span>
-                                    <span class="text-gray-400 text-right">주문력</span>
-                                </div>
-                                <div class="w-full h-1 bg-gray-800 rounded-full relative">
-                                    <div class="absolute right-1/3 top-1/2 -translate-y-1/2 w-3 h-3 bg-yellow-500 rounded-full border-2 border-[#1c2127] shadow-sm"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div> -->
-
-					<!-- 최근 20개 게임 전적 통계 -->
-                    <div class="col-span-3 flex flex-col justify-center items-center">
-                        <p class="text-xs text-gray-500 uppercase font-bold">TOP 4 확률</p>
-                        <h2 class="text-4xl font-black text-green-500 my-1">60.0%</h2>
-                        <div class="mt-4 pt-4 border-t border-gray-800 w-full text-center">
-                            <p class="text-[10px] text-gray-500 uppercase">승률 10.0%</p>
-                        </div>
-                    </div>
-                </section>
-
-				<!-- 최근 경기 정보 -->
-                <section class="space-y-3">
-                    <h3 class="font-bold text-sm text-gray-300">최근 경기 정보</h3>
-                    
-					<!-- 전적 하나 -->
-                    <div class="bg-[#1c2127] border-l-4 border-yellow-500 rounded-r-lg p-4 flex items-center justify-between hover:bg-[#232931] transition-colors">
-                        <div class="flex items-center gap-8">
-                            <div class="text-center w-8">
-                                <p class="text-3xl font-black italic text-yellow-500">1</p>
-                                <p class="text-[9px] text-gray-500 uppercase font-bold">Rank</p>
-                            </div>
-                            <div class="flex gap-1.5 border-l border-gray-800 pl-6">
-                                <div class="w-7 h-8 bg-black/40 border border-yellow-600 rounded flex items-center justify-center">🗡️</div>
-                                <div class="w-7 h-8 bg-black/40 border border-gray-600 rounded flex items-center justify-center opacity-50">🛡️</div>
-                            </div>
-                            <div class="flex gap-2">
-                                <div class="relative w-11 h-11 border-2 border-yellow-500 rounded overflow-hidden">
-                                    <img src="https://via.placeholder.com/44" class="w-full h-full object-cover">
-                                    <div class="absolute top-0 left-0 w-full bg-black/40 flex justify-center text-[8px] text-yellow-400 font-bold">★★★</div>
-                                </div>
-                                <div class="relative w-11 h-11 border border-blue-400 rounded">
-                                    <img src="https://via.placeholder.com/44" class="w-full h-full object-cover opacity-80">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="text-right">
-                            <p class="text-xs font-bold text-blue-400">+47 LP</p>
-                            <p class="text-[10px] text-gray-500 mt-1 uppercase">3 hours ago</p>
-                        </div>
-                    </div>
-
-					<!-- 전적 하나 -->
-                    <div class="bg-[#1c2127] border-l-4 border-blue-500 rounded-r-lg p-4 flex items-center justify-between hover:bg-[#232931] transition-colors">
-                        <div class="flex items-center gap-8">
-                            <div class="text-center w-8">
-                                <p class="text-3xl font-black italic text-blue-500">4</p>
-                                <p class="text-[9px] text-gray-500 uppercase font-bold">Rank</p>
-                            </div>
-                            <div class="flex gap-1.5 border-l border-gray-800 pl-6">
-                                <div class="w-7 h-8 bg-black/40 border border-gray-600 rounded flex items-center justify-center opacity-50">🔮</div>
-                            </div>
-                            <div class="flex gap-2">
-                                <div class="w-11 h-11 border border-gray-700 rounded bg-gray-800"></div>
-                            </div>
-                        </div>
-                        <div class="text-right">
-                            <p class="text-xs font-bold text-gray-400">+2 LP</p>
-                            <p class="text-[10px] text-gray-500 mt-1 uppercase">19 hours ago</p>
-                        </div>
-                    </div>
-                </section>
-            </main>
+            <div class="icon-box p-10 pt-14 pb-14 shadow-2xl">
+                <div class="hex-row">
+                    <div class="hex" th:each="i : ${#numbers.sequence(1, 7)}"></div>
+                    <div class="hex"></div><div class="hex"></div><div class="hex"></div><div class="hex"></div><div class="hex"></div><div class="hex"></div><div class="hex"></div>
+                </div>
+                <div class="hex-row even">
+                    <div class="hex"></div><div class="hex"></div><div class="hex"></div><div class="hex"></div><div class="hex"></div><div class="hex"></div><div class="hex"></div>
+                </div>
+                <div class="hex-row">
+                    <div class="hex"></div><div class="hex"></div><div class="hex"></div><div class="hex"></div><div class="hex"></div><div class="hex"></div><div class="hex"></div>
+                </div>
+                <div class="hex-row even">
+                    <div class="hex"></div><div class="hex"></div><div class="hex"></div><div class="hex"></div><div class="hex"></div><div class="hex"></div><div class="hex"></div>
+                </div>
+            </div>
         </div>
 
-        <script>
-            const ctx = document.getElementById('rankChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['1', '2', '3', '4', '5', '6', '7', '8'],
-                    datasets: [{
-                        data: [2, 4, 3, 3, 3, 2, 1, 2],
-                        backgroundColor: (c) => c.index < 4 ? '#3b82f6' : '#4b5563',
-                        borderRadius: 3,
-                        barPercentage: 0.7
-                    }]
-                },
-                options: {
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { display: false },
-                        x: { 
-                            grid: { display: false },
-                            ticks: { color: '#6b7280', font: { size: 10 } }
-                        }
-                    }
-                }
-            });
-        </script>
-    </main>
+        <div class="icon-box p-4">
+            <div class="flex justify-between items-center mb-4 border-b border-gray-800 pb-2">
+                <div class="flex gap-4 text-xs">
+                    <span class="text-orange-400 border-b-2 border-orange-400 pb-1 cursor-pointer">가격순</span>
+                    <span class="text-gray-500 cursor-pointer">이름순</span>
+                </div>
+                <input type="text" placeholder="챔피언 검색" class="bg-[#0f1012] border border-gray-700 rounded px-3 py-1 text-xs outline-none focus:border-orange-500">
+            </div>
+
+            <div class="grid grid-cols-10 gap-2">
+                <div th:each="i : ${#numbers.sequence(1, 20)}" class="relative group cursor-pointer">
+                    <div class="w-16 h-16 bg-gray-700 rounded-md overflow-hidden border-2 border-gray-800 group-hover:border-orange-500">
+                        <div class="w-full h-full flex items-center justify-center text-[10px] text-gray-500">Img</div>
+                    </div>
+                    <p class="text-[10px] text-center mt-1 text-gray-400">챔피언</p>
+                </div>
+                <div class="w-16 h-16 bg-blue-900 rounded-md border-2 border-blue-400 opacity-80"></div>
+                <div class="w-16 h-16 bg-purple-900 rounded-md border-2 border-purple-400 opacity-80"></div>
+                <div class="w-16 h-16 bg-orange-900 rounded-md border-2 border-orange-400 opacity-80"></div>
+                <div class="w-16 h-16 bg-gray-700 rounded-md border-2 border-gray-600 opacity-80"></div>
+            </div>
+        </div>
+
+    </div>
+
 </body>
 </html>

@@ -1,15 +1,101 @@
 <!DOCTYPE html>
-<html
-xmlns:th="http://www.thymeleaf.org"
-xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-layout:decorate="~{layout/layout.html}">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/layout.html}">
 <head>
-<meta charset="UTF-8">
-<title>TFT Meta</title>
+    <meta charset="UTF-8">
+    <title>TFT Meta Trends</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body >
-	<main layout:fragment="content">
-		<p th:text="'Hello, ' + ${name} + '!'"></p>
-	</main>
+<body class="bg-[#0f1215] text-white">
+
+<main layout:fragment="content" class="container mx-auto px-4 py-8 max-w-7xl">
+    
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold text-white">최신 메타 덱 (DB 분석 기반)</h1>
+        <span class="text-sm text-gray-500">최근 3일간의 매치 데이터를 분석한 결과입니다.</span>
+    </div>
+
+    <!-- 메타 덱 리스트 테이블 -->
+    <div class="bg-[#1c2127] rounded-lg border border-gray-800 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                <tr class="bg-[#12161b] text-xs uppercase text-gray-400 font-bold border-b border-gray-800">
+                    <th class="py-3 px-4 w-16 text-center">Rank</th>
+                    <th class="py-3 px-4">Deck Name</th>
+                    <th class="py-3 px-4">Core Units</th>
+                    <th class="py-3 px-4 text-center">Avg Place</th>
+                    <th class="py-3 px-4 text-center">Win Rate</th>
+                    <th class="py-3 px-4 text-center">Top 4</th>
+                    <th class="py-3 px-4 text-center">Pick Rate</th>
+                </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-800">
+                <tr th:each="deck, iter : ${decks}" class="hover:bg-white/5 transition-colors group">
+                    <!-- Rank / Tier -->
+                    <td class="py-4 px-4 text-center">
+                        <div class="flex flex-col items-center justify-center gap-1">
+                            <span class="w-8 h-8 flex items-center justify-center rounded text-sm font-black shadow-lg"
+                                  th:classappend="${deck.tier == 'S'} ? 'bg-gradient-to-br from-yellow-400 to-orange-600 text-white' : 
+                                                  (${deck.tier == 'A'} ? 'bg-gradient-to-br from-blue-400 to-indigo-600 text-white' : 
+                                                  (${deck.tier == 'B'} ? 'bg-gradient-to-br from-green-400 to-emerald-600 text-white' : 'bg-gray-600 text-gray-300'))"
+                                  th:text="${deck.tier}">S</span>
+                            <span class="text-[10px] text-gray-500" th:text="'#' + ${iter.count}"></span>
+                        </div>
+                    </td>
+
+                    <!-- Deck Name & Trait -->
+                    <td class="py-4 px-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-gray-800 rounded-lg p-1 border border-gray-700">
+                                <img th:src="${deck.mainTraitIcon}" class="w-full h-full object-contain filter brightness-125">
+                            </div>
+                            <span class="font-bold text-gray-200" th:text="${deck.name}">7 Pentakill</span>
+                        </div>
+                    </td>
+
+                    <!-- Core Units -->
+                    <td class="py-4 px-4">
+                        <div class="flex flex-wrap gap-1">
+                            <div th:each="unit : ${deck.coreUnits}" class="relative w-9 h-9 group/unit">
+                                <div class="w-full h-full rounded border overflow-hidden bg-gray-900"
+                                     th:classappend="${unit.cost >= 5} ? 'border-yellow-500' : 
+                                                     (${unit.cost == 4} ? 'border-purple-500' : 
+                                                     (${unit.cost == 3} ? 'border-blue-500' : 
+                                                     (${unit.cost == 2} ? 'border-green-500' : 'border-gray-500')))">
+                                    <img th:src="${unit.imgUrl}" class="w-full h-full object-cover object-[90%_50%]">
+                                </div>
+                                <!-- 비용 아이콘 ($) -->
+                                <div class="absolute -top-1 -right-1 w-3 h-3 bg-black rounded-full flex items-center justify-center text-[8px] text-yellow-400 border border-gray-600"
+                                     th:text="${unit.cost}">4</div>
+                                <!-- 툴팁 -->
+                                <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover/unit:block z-50">
+                                    <div class="bg-black text-white text-[10px] px-2 py-1 rounded border border-gray-700 whitespace-nowrap shadow-xl" th:text="${unit.name}"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+
+                    <!-- Stats -->
+                    <td class="py-4 px-4 text-center font-bold text-gray-200" th:text="${#numbers.formatDecimal(deck.avgPlacement, 1, 2)}">3.56</td>
+                    <td class="py-4 px-4 text-center text-sm text-gray-400" th:text="${#numbers.formatDecimal(deck.winRate, 1, 1)} + '%'">15.2%</td>
+                    <td class="py-4 px-4 text-center text-sm font-bold text-green-500" th:text="${#numbers.formatDecimal(deck.top4Rate, 1, 1)} + '%'">56.0%</td>
+                    <td class="py-4 px-4 text-center text-sm text-gray-400" th:text="${#numbers.formatDecimal(deck.pickRate, 1, 1)} + '%'">2.1%</td>
+                </tr>
+                
+                <!-- 데이터가 없을 때 -->
+                <tr th:if="${#lists.isEmpty(decks)}">
+                    <td colspan="7" class="py-10 text-center text-gray-500">
+                        <p class="text-lg">분석된 메타 데이터가 없습니다.</p>
+                        <p class="text-sm mt-2">배치 프로그램이 실행되면 데이터가 수집됩니다.</p>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+
 </body>
 </html>

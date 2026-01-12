@@ -5,273 +5,119 @@ xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
 layout:decorate="~{layout/layout.html}">
 <head>
 <meta charset="UTF-8">
-<title>TFT Search Service</title>
-<style>
-
-.app-ad-container {
-    background-image: url('https://cdn.metatft.com/cdn-cgi/image/width=700,format=auto/https://cdn.metatft.com/file/metatft/images/social_thumbnail_metatft2.png');
-    background-size: cover; background-repeat: no-repeat; background-position: center;
-    width: 700px; height: 200px;
-    display: flex; padding-left: 5%;
-
-}
-.text-content {
-    max-width: 50%;
-    color: white;
-}
-
-.heading-text {
-    font-size: 24px;
-    font-weight: bold;
-    margin-bottom: 10px;
-}
-
-.body-text {
-    font-size: 16px;
-    margin-bottom: 20px;
-}
-
-.download-link {
-    color: yellow; /* 다운로드 링크는 강조 */
-    font-weight: bold;
-    text-decoration: none;
-}
-
-
-.form-group label {
-    margin-right: 10px; /* 라벨과 인풋 사이의 간격 조정 */
-    width: 80px; /* 라벨의 고정 너비 설정 */
-}
-
-/* 유닛 컨테이너: flex로 여러줄 가능 */
-.unit-container {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 3px;
-	margin-top: 10px;
-}
-
-/* 유닛 박스 */
-.unit-box {
-	width: 70px;
-	text-align: center;
-	position: relative;
-}
-
-/* 별 등급 */
-.unit-star {
-	position: absolute;
-	top: -20px;
-	left: 0;
-	right: 0;
-	font-size: 14px;
-	font-weight: bold;
-	text-align: center;
-}
-
-/* 유닛 이미지 */
-.unit-image {
-	position: relative; /* 툴팁 위치 기준 */
-	border: 3px solid;
-	border-radius: 8px;
-	overflow: hidden;
-	width: 60px;
-	height: 60px;
-	margin: 0 auto;
-}
-
-/* 유닛 이미지 내부 img */
-.unit-image img {
-	width: 100%;
-	height: 100%;
-	object-fit: cover;
-}
-
-/* 유닛 아이템 목록 */
-.unit-items {
-	display: flex;
-	justify-content: center;
-	flex-wrap: wrap;
-	gap: 2px;
-	margin-top: 4px;
-}
-
-/* 아이템 이미지 */
-.unit-items img {
-	width: 17px;
-	height: 17px;
-	border-radius: 4px;
-}
-
-/* 챔피언 이미지 */
-.champ-img {
-	width: 60px;
-	height: 60px;
-	object-fit: cover;
-	object-position: 75% top;
-	border-radius: 5px;
-}
-
-/* 정보 박스 */
-.infoBox {
-	min-height: auto;
-	height: auto;
-	background-color: #f8f9fa;
-	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-	border-radius: 12px;
-}
-
-/* 아이템 컨테이너: 한 줄에 배치, 간격 */
-.item-container {
-	display: flex;
-	flex-wrap: nowrap;
-	gap: 6px;
-}
-
-/* 아이템, 유닛, 시너지 모두 position: relative */
-.item-wrapper,
-.unit,
-.synergy {
-	position: relative;
-	display: inline-block;
-}
-
-/* 툴팁 기본 스타일 */
-.tooltip {
-	position: absolute;
-	bottom: 110%; /* 이미지 위로 툴팁을 띄우기 */
-	left: 50%;
-	transform: translateX(-50%);
-	padding: 4px 8px;
-	background: rgba(0, 0, 0, 0.8);
-	color: white;
-	border-radius: 4px;
-	white-space: nowrap;
-	visibility: hidden;
-	opacity: 0;
-	transition: opacity 0.3s ease, transform 0.3s ease;
-	pointer-events: none;
-	z-index: 10; /* 툴팁을 유닛 이미지 위에 표시하기 위해 설정 */
-}
-
-/* 호버 시 툴팁 보이기 */
-.item-wrapper:hover .tooltip,
-.unit:hover .tooltip,
-.unit-image:hover .tooltip,  /* 이미지에 마우스 올려도 툴팁 보임 */
-.synergy:hover .tooltip {
-	visibility: visible;
-	opacity: 1;
-	pointer-events: auto;
-	transform: translateX(-50%) translateY(-5px);
-}
-
-</style>
+<title>TFT.GG - Teamfight Tactics Search & Analytics</title>
+<script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-[#0f1215]" style="color: #ffffff;">
-	<main layout:fragment="content" class="space-y-8">
-        <div class="relative w-full h-[200px]  overflow-hidden shadow-lg flex items-center px-[5%] group"
-            style="background-image: url('https://cdn.metatft.com/cdn-cgi/image/width=700,format=auto/https://cdn.metatft.com/file/metatft/images/social_thumbnail_metatft2.png'); background-size: cover; background-position: center;">
-            <div class="absolute inset-0 bg-black/30 group-hover:bg-black/20 transition-colors"></div>
+<body class="bg-[#0f1215] text-white">
+	<main layout:fragment="content" class="container mx-auto px-4 py-12 max-w-5xl space-y-16">
+        
+        <!-- Hero / Ad Section -->
+        <div class="relative w-full h-[260px] rounded-2xl overflow-hidden shadow-2xl flex items-center px-8 md:px-16 group transition-all hover:shadow-blue-900/10"
+            style="background-image: url('https://cdn.metatft.com/cdn-cgi/image/width=1200,format=auto/https://cdn.metatft.com/file/metatft/images/social_thumbnail_metatft2.png'); background-size: cover; background-position: center;">
+            <div class="absolute inset-0 bg-gradient-to-r from-[#0f1215]/95 via-[#0f1215]/60 to-transparent"></div>
             
-            <div class="relative z-10 max-w-[50%]">
-                <h2 class="text-2xl font-bold text-white mb-2">Want To Win More Games?</h2>
-                <p class="text-sm text-gray-100 mb-5">Download the free TFT.GG in-game App for more features and live insights</p>
-                <a href="#" class="inline-block text-yellow-400 font-bold hover:text-yellow-300 transition-colors">
-                    Download Now! 👉
-                </a>
+            <div class="relative z-10 max-w-lg space-y-4">
+                <h2 class="text-3xl md:text-5xl font-black text-white tracking-tight leading-tight">
+                    Dominate the <br><span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-teal-400">Convergence</span>
+                </h2>
+                <p class="text-gray-400 text-sm md:text-base font-medium leading-relaxed max-w-md">
+                    Real-time match analytics, meta trends, and summoner stats. <br>Level up your TFT gameplay today.
+                </p>
+                <div class="pt-2">
+                    <a href="#" class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold px-8 py-3 rounded-lg transition-all active:scale-95 shadow-lg shadow-blue-600/20">
+                        <span>Get Started</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                    </a>
+                </div>
             </div>
         </div>
 
-        <section class="bg-[#1c2127] p-6 rounded-xl border border-gray-800 shadow-sm">
-            <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
-                <span class="text-blue-500">🔍</span> 소환사 검색
-            </h3>
-            <form id="summonerForm" class="flex flex-wrap items-end gap-4" onsubmit="searchSummoner(event)">
+        <!-- Search Section -->
+        <section class="max-w-4xl mx-auto w-full">
+            <div class="bg-[#1c2127] p-8 md:p-10 rounded-2xl border border-gray-800 shadow-xl relative overflow-hidden">
+                <!-- Decorative BG elements -->
+                <div class="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+
+                <h3 class="text-xl font-bold mb-8 text-center text-white flex items-center justify-center gap-2 relative z-10">
+                    <span class="text-2xl">🔎</span> 소환사 전적 검색
+                </h3>
                 
-                <div class="flex flex-col gap-2">
-                    <label class="text-xs text-gray-400 font-bold">SERVER</label>
-                    <select id="server" name="server" class="bg-[#0f1215] border border-gray-700 rounded px-3 py-2 text-sm focus:border-blue-500 outline-none">
-                        <option value="KR">KR</option>
-                        <option value="JA">JA</option>
-                    </select>
-                </div>
-
-                <div class="flex flex-col gap-2 flex-grow max-w-xs">
-                    <label for="gameName" class="text-xs text-gray-400 font-bold">GAME NAME</label>
-                    <input type="text" id="gameName" name="gameName" placeholder="아이디" required
-                        class="bg-[#0f1215] border border-gray-700 rounded px-4 py-2 text-sm focus:border-blue-500 outline-none">
-                </div>
-
-                <div class="flex flex-col gap-2 w-24">
-                    <label for="tagLine" class="text-xs text-gray-400 font-bold">TAG</label>
-                    <input type="text" id="tagLine" name="tagLine" placeholder="#KR1" required
-                        class="bg-[#0f1215] border border-gray-700 rounded px-4 py-2 text-sm focus:border-blue-500 outline-none">
-                </div>
-
-                <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-8 py-2 rounded transition-all active:scale-95">
-                    조회
-                </button>
-            </form>
-        </section>
-
-        <div class="bg-[#1c2127] rounded-xl p-5 border border-gray-800 shadow-md">
-            <div class="flex items-center gap-2 overflow-x-auto pb-2 border-b border-gray-800 mb-6">
-                <div class="relative group cursor-help shrink-0">
-                    <div class="w-9 h-10 relative">
-                        <img src="https://cdn.dak.gg/tft/images2/tft/traits/background/unique.svg" class="absolute inset-0 w-full h-full">
-                        <img src="https://ddragon.leagueoflegends.com/cdn/15.7.1/img/tft-trait/Trait_Icon_14_SoulKiller.TFT_Set14.png" 
-                            class="absolute inset-0 m-auto w-5 h-5 filter invert">
-                    </div>
-                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-black text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20">
-                        영혼 살해자 (1)
-                    </div>
-                </div>
-            </div>
-
-            <div class="flex flex-wrap gap-4">
-                <div class="w-16 text-center group">
-                    <div class="text-[10px] font-bold text-yellow-500 mb-1">★★★</div>
-                    <div class="relative inline-block">
-                        <div class="w-14 h-14 rounded-lg border-2 border-yellow-500 overflow-hidden">
-                            <img src="https://ddragon.leagueoflegends.com/cdn/15.7.1/img/tft-champion/TFT14_Viego.TFT_Set14.png" class="w-full h-full object-cover object-[90%_50%]">
-                        </div>
-                        <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-black text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity z-20 whitespace-nowrap">
-                            비에고
-                        </div>
-                    </div>
-                    <div class="flex justify-center gap-0.5 mt-1.5">
-                        <div class="relative group/item">
-                            <img src="https://ddragon.leagueoflegends.com/cdn/15.8.1/img/tft-item/TFT_Item_Bloodthirster.png" class="w-4 h-4 rounded shadow-sm">
-                            <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-1.5 py-0.5 bg-gray-800 text-[8px] rounded opacity-0 group-hover/item:opacity-100 transition-opacity whitespace-nowrap">
-                                피바라기
+                <form id="summonerForm" class="flex flex-col md:flex-row items-end gap-3 relative z-10" onsubmit="searchSummoner(event)">
+                    
+                    <div class="w-full md:w-auto flex flex-col gap-1.5">
+                        <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider pl-1">Server</label>
+                        <div class="relative">
+                            <select id="server" name="server" class="w-full md:w-28 bg-[#0f1215] border border-gray-700 rounded-lg pl-4 pr-8 py-3.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors appearance-none cursor-pointer font-bold text-gray-300">
+                                <option value="KR">KR</option>
+                                <option value="JP">JP</option>
+                                <option value="NA">NA</option>
+                            </select>
+                            <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                             </div>
                         </div>
                     </div>
+
+                    <div class="w-full flex-grow flex flex-col gap-1.5">
+                        <label for="gameName" class="text-[10px] text-gray-400 font-bold uppercase tracking-wider pl-1">Game Name</label>
+                        <input type="text" id="gameName" name="gameName" placeholder="소환사명 (예: Hide on bush)" required
+                            class="w-full bg-[#0f1215] border border-gray-700 rounded-lg px-4 py-3.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none placeholder-gray-600 transition-colors text-white font-medium">
+                    </div>
+
+                    <div class="w-full md:w-40 flex flex-col gap-1.5">
+                        <label for="tagLine" class="text-[10px] text-gray-400 font-bold uppercase tracking-wider pl-1">Tag</label>
+                        <input type="text" id="tagLine" name="tagLine" placeholder="#KR1" required
+                            class="w-full bg-[#0f1215] border border-gray-700 rounded-lg px-4 py-3.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none placeholder-gray-600 text-center transition-colors text-white font-medium font-mono">
+                    </div>
+
+                    <button type="submit" class="w-full md:w-auto bg-blue-600 hover:bg-blue-500 text-white font-bold px-8 py-3.5 rounded-lg transition-all shadow-lg shadow-blue-600/20 active:scale-95 whitespace-nowrap flex items-center justify-center gap-2">
+                        검색
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <!-- Feature Highlight (Placeholder) -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+            <div class="bg-[#1c2127] p-5 rounded-xl border border-gray-800 hover:border-gray-700 transition-colors group cursor-pointer">
+                <div class="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-blue-500/20 transition-colors">
+                    <span class="text-xl">📊</span>
                 </div>
+                <h4 class="font-bold text-gray-200 mb-2">Meta Trends</h4>
+                <p class="text-xs text-gray-500 leading-relaxed">Discover the highest win-rate compositions and item builds based on millions of matches.</p>
+            </div>
+            
+            <div class="bg-[#1c2127] p-5 rounded-xl border border-gray-800 hover:border-gray-700 transition-colors group cursor-pointer">
+                <div class="w-10 h-10 bg-green-500/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-green-500/20 transition-colors">
+                    <span class="text-xl">📈</span>
+                </div>
+                <h4 class="font-bold text-gray-200 mb-2">Live Tracking</h4>
+                <p class="text-xs text-gray-500 leading-relaxed">Check your LP gains and rank progression with our detailed history graphs.</p>
+            </div>
+
+            <div class="bg-[#1c2127] p-5 rounded-xl border border-gray-800 hover:border-gray-700 transition-colors group cursor-pointer">
+                 <div class="w-10 h-10 bg-purple-500/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-purple-500/20 transition-colors">
+                    <span class="text-xl">🏆</span>
+                </div>
+                <h4 class="font-bold text-gray-200 mb-2">Leaderboards</h4>
+                <p class="text-xs text-gray-500 leading-relaxed">See the top players in your region and analyze their strategies to climb faster.</p>
             </div>
         </div>
-        <br>
-        <script>
-            const date = new Date(1764687600); // JS는 밀리초 단위 사용
-            console.log(date.toLocaleString());
-        </script>
+
         <script>
             function searchSummoner(event) {
-                event.preventDefault(); // 기본 폼 제출 방지
-
+                event.preventDefault();
                 const serverEl = document.getElementById('server');
                 const gameNameEl = document.getElementById('gameName');
                 const tagLineEl = document.getElementById('tagLine');
 
                 const server = serverEl.value.toLowerCase();
-                const gameName = gameNameEl.value;
-                const tagLine = tagLineEl.value.replace('#', '').toUpperCase();; // # 제거
+                const gameName = gameNameEl.value.trim();
+                const tagLine = tagLineEl.value.trim().replace('#', '').toUpperCase();
 
-                // 원하는 경로 구조로 URL 생성
-                const newUrl = `/summoner/${server}/${gameName}/${tagLine}`;
-
-                // 이동
-                window.location.href = newUrl;
+                if(gameName && tagLine) {
+                     window.location.href = `/summoner/${server}/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`;
+                }
             }
         </script>
     </main>

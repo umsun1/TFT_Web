@@ -127,6 +127,9 @@ public  class SummonerServiceImp implements SummonerService{
                 profile.setRecentAvgPlacement(recentTotalPlacement / recentMatches.size());
                 profile.setRecentTop4Rate((double) recentTop4 / recentMatches.size() * 100.0);
                 profile.setRecentWinRate((double) recentWins / recentMatches.size() * 100.0);
+                profile.setRecentPlacements(recentMatches.stream()
+                        .map(com.tft.web.domain.Participant::getPaPlacement)
+                        .collect(java.util.stream.Collectors.toList()));
 
                 // [추가/수정] 업적 계산 로직 강화
                 List<String> achievements = new java.util.ArrayList<>();

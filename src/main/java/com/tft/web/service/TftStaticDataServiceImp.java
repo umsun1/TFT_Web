@@ -22,6 +22,9 @@ public  class TftStaticDataServiceImp implements TftStaticDataService{
     //유닛
     private Map<String, String> unitMap = new HashMap<>();
     private Map<String, String> unitNameMap = new HashMap<>();
+    private Map<String, Integer> unitCostMap = new HashMap<>(); // [추가] 챔피언 비용 맵
+    private java.util.List<com.tft.web.model.dto.ChampionDto> allChampions = new java.util.ArrayList<>();
+
     //아이템
     private Map<String, String> itemMap = new HashMap<>();
     private Map<String, String> itemNameMap = new HashMap<>();
@@ -74,12 +77,47 @@ public  class TftStaticDataServiceImp implements TftStaticDataService{
             
             // entry.getKey() 대신 노드 안의 "id" 필드를 가져옵니다.
             String realId = unitNode.get("id").asText(); // "TFT15_Aatrox"
-            String imgFull = unitNode.get("image").get("full").asText(); // "TFT15_Aatrox.TFT_Set15.png"
+
+            // 시즌 16 기물만 필터링 (TFT16으로 시작하는 것만)
+            if (!realId.startsWith("TFT16")) return;
+
+            String imgFull = unitNode.get("image").get("full").asText();
             String koName = unitNode.get("name").asText();
+            int cost = unitNode.has("tier") ? unitNode.get("tier").asInt() : 1; // [추가] 비용 파싱
 
             unitMap.put(realId, imgFull);
             unitNameMap.put(realId, koName);
+            unitCostMap.put(realId, cost);
+
+            // ChampionDto 생성 및 리스트 추가
+            java.util.List<String> traits = new java.util.ArrayList<>();
+            if (unitNode.has("traits")) {
+                unitNode.get("traits").forEach(t -> traits.add(t.asText()));
+            }
+
+            allChampions.add(com.tft.web.model.dto.ChampionDto.builder()
+                    .id(realId)
+                    .name(koName)
+                    .cost(cost)
+                    .imgUrl("https://ddragon.leagueoflegends.com/cdn/" + VERSION + "/img/tft-champion/" + imgFull)
+                    .traits(traits)
+                    .build());
         });
+        
+        // 티버 수동 추가 (소환수라 JSON에 없을 수 있음)
+        if (allChampions.stream().noneMatch(c -> c.getId().equals("TFT16_AnnieTibbers"))) {
+            allChampions.add(com.tft.web.model.dto.ChampionDto.builder()
+                    .id("TFT16_AnnieTibbers")
+                    .name("티버")
+                    .cost(5) // 애니와 동일한 코스트로 가정
+                    .imgUrl("https://cdn.lolchess.gg/upload/images/champions/TFT16_AnnieTibbers.jpg")
+                    .traits(java.util.List.of())
+                    .build());
+        }
+
+        // [추가] 코스트 오름차순 정렬
+        allChampions.sort(java.util.Comparator.comparingInt(com.tft.web.model.dto.ChampionDto::getCost));
+
         System.out.println("- 유닛 데이터 로드 완료 (" + unitMap.size() + "개)");
     }
     // 아이템 데이터 전용 로더
@@ -183,4 +221,14 @@ public  class TftStaticDataServiceImp implements TftStaticDataService{
     public String getUnitKoName(String characterId){
         return unitNameMap.getOrDefault(characterId, characterId);
     }
+    @Override
+    public int getChampionCost(String name) {
+        return unitCostMap.getOrDefault(name, 1);
+    }
+
+    @Override
+    public java.util.List<com.tft.web.model.dto.ChampionDto> getAllChampions() {
+        return allChampions;
+    }
+
 }

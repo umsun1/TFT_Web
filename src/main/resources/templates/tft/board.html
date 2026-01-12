@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/layout.html}">
+<head>
+    <meta charset="UTF-8">
+    <title>TFT Team Builder</title>
+    <style>
+        :root {
+            --hex-w: 80px;
+            --hex-h: 90px;
+            --hex-my: -22px;
+            --hex-mx: 5px;
+        }
+        .board-container {
+            margin: 20px 0;
+            display: flex;
+            justify-content: center;
+        }
+        .board {
+            background: linear-gradient(145deg, #1a1c21 0%, #0f1215 100%);
+            padding: 60px 50px;
+            border-radius: 24px;
+            display: inline-block;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .hex-row { display: flex; margin-top: var(--hex-my); }
+        .hex-row:first-child { margin-top: 0; }
+        .hex-row.even { margin-left: calc((var(--hex-w) + (var(--hex-mx) * 2)) / 2); }
+
+        .hex {
+            width: var(--hex-w);
+            height: var(--hex-h);
+            background-color: #2a2e35;
+            margin: 0 var(--hex-mx);
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.15s ease-out;
+            z-index: 1;
+        }
+        .hex:hover { background-color: #3f4551; transform: scale(1.08); z-index: 10; }
+        .hex.droppable-hover { background-color: #4a5568 !important; transform: scale(1.1); }
+
+        .hex-content {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+        
+        /* 배치된 유닛 이미지 스타일 적용 */
+        .placed-unit {
+            width: 100%;
+            height: 100%;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .placed-unit img { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover; 
+            object-position: 90% 50%; /* 요청하신 위치 값 적용 */
+        }
+        
+        .champ-card {
+            cursor: grab;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            user-select: none;
+        }
+        .champ-card:hover { transform: translateY(-8px); z-index: 20; }
+        .champ-card.selected {
+            outline: 3px solid #3b82f6;
+            outline-offset: 2px;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+        }
+        
+        .cost-1 { border-color: #808080; }
+        .cost-2 { border-color: #11b288; }
+        .cost-3 { border-color: #00b0f0; }
+        .cost-4 { border-color: #c038ff; }
+        .cost-5 { border-color: #ffc900; }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #374151; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-[#0f1215] text-white">
+
+<main layout:fragment="content" class="container mx-auto px-4 py-8 max-w-7xl">
+    
+    <div class="flex flex-col lg:flex-row gap-8">
+        
+        <div class="flex-1 flex flex-col items-center">
+            <div class="w-full flex justify-between items-end mb-4">
+                <div>
+                    <h1 class="text-2xl font-bold text-white">팀 빌더 (Team Builder)</h1>
+                    <p class="text-sm text-gray-500">챔피언을 배치하여 최적의 조합을 찾아보세요. (우클릭 제거)</p>
+                </div>
+                <button onclick="clearBoard()" class="bg-red-900/20 hover:bg-red-900/40 text-red-500 px-4 py-2 rounded border border-red-900/30 transition-all text-sm font-bold">
+                    보드 초기화
+                </button>
+            </div>
+
+            <div class="board-container w-full bg-[#1c2127] rounded-2xl border border-gray-800 p-8 shadow-inner overflow-x-auto">
+                <div class="board" id="tft-board">
+                    <div class="hex-row" th:each="row : ${#numbers.sequence(1, 4)}" 
+                         th:classappend="${row % 2 == 0} ? 'even'">
+                        <div class="hex" th:each="col : ${#numbers.sequence(1, 7)}"
+                             th:data-row="${row}" th:data-col="${col}"
+                             onclick="handleHexClick(this)"
+                             ondragover="handleDragOver(event)"
+                             ondragleave="handleDragLeave(this)"
+                             ondrop="handleDrop(event, this)">
+                            <div class="hex-content"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8 w-full bg-[#1c2127] rounded-xl border border-gray-800 p-6 shadow-2xl">
+                <div class="flex flex-col gap-6">
+                    <div class="flex flex-col md:flex-row gap-4 justify-between items-center border-b border-gray-800 pb-4">
+                        <div class="relative w-full md:w-80">
+                            <input type="text" id="champ-search" onkeyup="applyFilters()" placeholder="챔피언 검색..." 
+                                   class="w-full bg-black/40 border border-gray-700 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition-all">
+                        </div>
+                        
+                        <div class="flex gap-2 bg-black/30 p-1.5 rounded-lg border border-gray-800">
+                            <button onclick="setCostFilter('all')" class="cost-btn px-4 py-1.5 rounded text-xs font-bold bg-gray-700 transition-all">ALL</button>
+                            <button onclick="setCostFilter(1)" class="cost-btn px-4 py-1.5 rounded text-xs font-bold text-gray-400">1</button>
+                            <button onclick="setCostFilter(2)" class="cost-btn px-4 py-1.5 rounded text-xs font-bold text-[#11b288]">2</button>
+                            <button onclick="setCostFilter(3)" class="cost-btn px-4 py-1.5 rounded text-xs font-bold text-[#00b0f0]">3</button>
+                            <button onclick="setCostFilter(4)" class="cost-btn px-4 py-1.5 rounded text-xs font-bold text-[#c038ff]">4</button>
+                            <button onclick="setCostFilter(5)" class="cost-btn px-4 py-1.5 rounded text-xs font-bold text-[#ffc900]">5</button>
+                        </div>
+                    </div>
+                    
+                    <div id="champ-list" class="flex flex-wrap gap-4 justify-start max-h-[300px] overflow-y-auto pr-2 custom-scrollbar content-start py-2">
+                        <div th:each="champ : ${champions}" 
+                             class="champ-card w-16 h-16 rounded-lg border-2 overflow-hidden shrink-0"
+                             th:classappend="'cost-' + ${champ.cost}"
+                             th:data-id="${champ.id}"
+                             th:data-name="${champ.name}"
+                             th:data-cost="${champ.cost}"
+                             th:data-traits="${#strings.listJoin(champ.traits, ',')}"
+                             th:data-img="${champ.imgUrl}"
+                             draggable="true"
+                             ondragstart="handleDragStart(event, this)"
+                             onclick="handleChampClick(this)">
+                            <img th:src="${champ.imgUrl}" class="w-full h-full object-cover object-[90%_50%] pointer-events-none">
+                            <div class="absolute bottom-0 w-full bg-black/80 text-[10px] text-center text-white truncate px-1 py-1 font-medium pointer-events-none" th:text="${champ.name}"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <aside class="w-full lg:w-80 shrink-0 flex flex-col gap-6">
+            <div class="bg-[#1c2127] rounded-xl border border-gray-800 p-5 sticky top-24 shadow-xl">
+                <div class="flex items-center gap-2 mb-4 border-b border-gray-800 pb-3">
+                    <div class="w-5 h-5 bg-blue-500 rounded flex items-center justify-center">
+                        <span class="text-[10px] font-bold text-white">Σ</span>
+                    </div>
+                    <h3 class="text-sm font-bold text-gray-200 uppercase">활성화된 시너지</h3>
+                </div>
+                <div id="synergy-list" class="space-y-2.5">
+                    <div class="text-center text-gray-600 text-xs py-12 bg-black/20 rounded-lg border border-dashed border-gray-800">
+                        보드에 챔피언을 배치하세요
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <script th:inline="javascript">
+        // --- State Management ---
+        let activeUnits = []; 
+        let currentSelection = null; 
+        let currentCostFilter = 'all';
+        const traitNamesMap = /*[[${traitNames}]]*/ {} || {};
+
+        // --- Champion Interaction ---
+        function handleChampClick(el) {
+            selectChampion(el);
+        }
+
+        function handleDragStart(e, el) {
+            selectChampion(el);
+            e.dataTransfer.setData('text/plain', el.dataset.id);
+            e.dataTransfer.effectAllowed = "move";
+        }
+
+        function selectChampion(el) {
+            document.querySelectorAll('.champ-card').forEach(c => c.classList.remove('selected'));
+            el.classList.add('selected');
+            currentSelection = {
+                id: el.dataset.id,
+                name: el.dataset.name,
+                img: el.dataset.img,
+                traits: el.dataset.traits ? el.dataset.traits.split(',') : [],
+                cost: el.dataset.cost
+            };
+        }
+
+        // --- Hex Interaction ---
+        function handleHexClick(hex) {
+            if (currentSelection) {
+                placeUnit(hex, currentSelection);
+            }
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('droppable-hover');
+        }
+
+        function handleDragLeave(hex) {
+            hex.classList.remove('droppable-hover');
+        }
+
+        function handleDrop(e, hex) {
+            e.preventDefault();
+            hex.classList.remove('droppable-hover');
+            if (currentSelection) {
+                placeUnit(hex, currentSelection);
+            }
+        }
+
+        // --- Placement Logic ---
+        function placeUnit(hex, data) {
+            if (!data) return;
+            removeUnitFromHex(hex);
+
+            const content = hex.querySelector('.hex-content');
+            const unitDiv = document.createElement('div');
+            unitDiv.className = 'placed-unit';
+            
+            // 이미지 태그 생성 시 object-position 명시적 적용
+            const img = document.createElement('img');
+            img.src = data.img;
+            img.alt = data.name;
+            img.style.width = "100%";
+            img.style.height = "100%";
+            img.style.objectFit = "cover";
+            img.style.objectPosition = "90% 50%"; 
+            
+            unitDiv.appendChild(img);
+            content.appendChild(unitDiv);
+
+            hex.oncontextmenu = (e) => {
+                e.preventDefault();
+                removeUnitFromHex(hex);
+            };
+
+            activeUnits.push({
+                ...data,
+                row: hex.dataset.row,
+                col: hex.dataset.col
+            });
+
+            updateSynergies();
+        }
+
+        function removeUnitFromHex(hex) {
+            const content = hex.querySelector('.hex-content');
+            content.innerHTML = '';
+            activeUnits = activeUnits.filter(u => 
+                !(u.row === hex.dataset.row && u.col === hex.dataset.col)
+            );
+            updateSynergies();
+        }
+
+        function clearBoard() {
+            document.querySelectorAll('.hex-content').forEach(c => c.innerHTML = '');
+            activeUnits = [];
+            updateSynergies();
+        }
+
+        // --- Synergy & Filters ---
+        function updateSynergies() {
+            const counts = {};
+            const seen = new Set();
+            
+            const uniqueUnits = activeUnits.filter(u => {
+                if(seen.has(u.id)) return false;
+                seen.add(u.id);
+                return true;
+            });
+
+            uniqueUnits.forEach(u => {
+                u.traits.forEach(t => { if(t) counts[t] = (counts[t] || 0) + 1; });
+            });
+
+            const list = document.getElementById('synergy-list');
+            list.innerHTML = '';
+            const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+
+            if (entries.length === 0) {
+                list.innerHTML = '<div class="text-center text-gray-600 text-xs py-12 bg-black/20 rounded-lg border border-dashed border-gray-800">보드에 챔피언을 배치하세요</div>';
+                return;
+            }
+
+            entries.forEach(([trait, count]) => {
+                const koName = traitNamesMap[trait] || trait;
+                const div = document.createElement('div');
+                div.className = 'flex items-center justify-between bg-black/40 p-3 rounded-lg border border-gray-800 hover:border-gray-600 transition-colors';
+                div.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold text-gray-200">${koName}</span>
+                    </div>
+                    <span class="text-xs font-black bg-blue-600/20 text-blue-400 px-2.5 py-1 rounded border border-blue-600/30">${count}</span>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function setCostFilter(cost) {
+            currentCostFilter = cost;
+            document.querySelectorAll('.cost-btn').forEach(btn => {
+                btn.classList.remove('bg-gray-700', 'text-white');
+                const btnText = btn.innerText.trim();
+                if((cost === 'all' && btnText === 'ALL') || btnText == cost) {
+                    btn.classList.add('bg-gray-700', 'text-white');
+                }
+            });
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const s = document.getElementById('champ-search').value.toLowerCase();
+            document.querySelectorAll('.champ-card').forEach(c => {
+                const matchCost = (currentCostFilter === 'all' || c.dataset.cost == currentCostFilter);
+                const matchName = c.dataset.name.toLowerCase().includes(s);
+                c.style.display = (matchCost && matchName) ? 'block' : 'none';
+            });
+        }
+    </script>
+</main>
+</body>
+</html>
